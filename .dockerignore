@@ -1,0 +1,14 @@
+# El contexto de construcción es la raíz del repo: no enviar a Docker lo que no
+# hace falta para compilar ningún servicio.
+.git
+**/target
+**/bin/Debug
+**/bin/Release
+**/obj
+**/build
+**/.gradle
+**/node_modules
+**/dist
+**/.angular
+.env
+keys/

@@ -1,0 +1,418 @@
+openapi: 3.1.0
+info:
+  title: SmartFila · Identidad
+  description: Cuentas, sesión única (RN-07), roles y JWT RS256. Errores con el cuerpo común { code, message, details, traceId }.
+  license:
+    name: ''
+  version: 1.0.0
+paths:
+  /.well-known/jwks.json:
+    get:
+      tags:
+      - operación
+      summary: Clave pública para validar el JWT sin llamar a Identidad.
+      operationId: jwks
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+  /api/v1/sessions:
+    post:
+      tags:
+      - sesiones
+      summary: Login con C.I. y contraseña. Revoca la sesión anterior del mismo usuario.
+      operationId: iniciar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginBody'
+        required: true
+      responses:
+        '201':
+          description: Sesión abierta; la anterior queda revocada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenDto'
+        '400':
+          description: 'VALIDATION_ERROR: C.I. con formato inválido'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+        '401':
+          description: 'INVALID_CREDENTIALS: C.I. o contraseña incorrectos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+        '403':
+          description: ACCOUNT_DISABLED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+  /api/v1/sessions/current:
+    get:
+      tags:
+      - sesiones
+      summary: Comprueba que la sesión del token siga activa.
+      operationId: actual
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SesionDto'
+        '401':
+          description: UNAUTHENTICATED o SESSION_REVOKED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+      security:
+      - bearer: []
+    delete:
+      tags:
+      - sesiones
+      summary: 'Logout: revoca la sesión del token.'
+      operationId: cerrar
+      responses:
+        '204':
+          description: Sesión cerrada
+        '401':
+          description: UNAUTHENTICATED o SESSION_REVOKED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+      security:
+      - bearer: []
+  /api/v1/users:
+    post:
+      tags:
+      - usuarios
+      summary: 'Registro de ciudadano (RN-06). El rol no se elige: siempre es CIUDADANO.'
+      operationId: registrar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroBody'
+        required: true
+      responses:
+        '201':
+          description: Ciudadano registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDto'
+        '400':
+          description: 'VALIDATION_ERROR: lista de campos inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+        '409':
+          description: CI_ALREADY_REGISTERED o EMAIL_ALREADY_REGISTERED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+  /api/v1/users/me:
+    get:
+      tags:
+      - usuarios
+      summary: Perfil del usuario del token.
+      operationId: perfil
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioDto'
+        '401':
+          description: UNAUTHENTICATED o SESSION_REVOKED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CuerpoError'
+      security:
+      - bearer: []
+  /health:
+    get:
+      tags:
+      - operación
+      summary: Estado del servicio y de su base (lo usan el healthcheck de Docker y Kubernetes).
+      operationId: salud
+      responses:
+        '200':
+          description: Servicio y base de datos responden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Salud'
+        '503':
+          description: La base de datos no responde
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Salud'
+components:
+  schemas:
+    CuerpoError:
+      type: object
+      required:
+      - code
+      - message
+      - details
+      - traceId
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/Detalle'
+        message:
+          type: string
+          example: Datos inválidos
+        traceId:
+          type: string
+          description: Igual a la cabecera X-Correlation-Id, para buscar la petición en los logs.
+          example: 4bf92f35-77b3-4da6-a3ce-929d0e0e4736
+    Detalle:
+      type: object
+      required:
+      - field
+      - issue
+      properties:
+        field:
+          type: string
+          example: ci
+        issue:
+          type: string
+          example: solo dígitos
+    Jwk:
+      type: object
+      description: Clave pública en formato JWK (RFC 7517).
+      required:
+      - kty
+      - alg
+      - use
+      - kid
+      - n
+      - e
+      properties:
+        alg:
+          type: string
+          example: RS256
+        e:
+          type: string
+          description: Exponente en base64url.
+          example: AQAB
+        kid:
+          type: string
+          example: identidad-1
+        kty:
+          type: string
+          example: RSA
+        n:
+          type: string
+          description: Módulo en base64url.
+        use:
+          type: string
+          example: sig
+    Jwks:
+      type: object
+      required:
+      - keys
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+    LoginBody:
+      type: object
+      properties:
+        ci:
+          type: string
+          default: ''
+          example: '1234567'
+        ciComplement:
+          type:
+          - string
+          - 'null'
+          default: null
+          example: 1A
+        password:
+          type: string
+          default: ''
+          example: una-clave-segura
+    RegistroBody:
+      type: object
+      description: |-
+        Los campos que faltan llegan vacíos y el dominio responde "obligatorio" para
+        cada uno, todos en la misma respuesta 400.
+      properties:
+        ci:
+          type: string
+          default: ''
+          example: '1234567'
+        ciComplement:
+          type:
+          - string
+          - 'null'
+          description: Complemento de 2 caracteres (opcional).
+          default: null
+          example: 1A
+        email:
+          type: string
+          default: ''
+          example: ana@example.com
+        firstNames:
+          type: string
+          default: ''
+          example: Ana María
+        lastNames:
+          type: string
+          default: ''
+          example: Pérez Cruz
+        password:
+          type: string
+          default: ''
+          example: una-clave-segura
+          maxLength: 128
+          minLength: 8
+        phone:
+          type: string
+          description: Celular boliviano de 8 dígitos que empieza en 6 o 7.
+          default: ''
+          example: '71234567'
+    Salud:
+      type: object
+      required:
+      - status
+      - database
+      properties:
+        database:
+          type: string
+          example: UP
+        status:
+          type: string
+          example: UP
+    SesionDto:
+      type: object
+      required:
+      - sessionId
+      - userId
+      - createdAt
+      - expiresAt
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        sessionId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+    TokenDto:
+      type: object
+      required:
+      - accessToken
+      - tokenType
+      - expiresIn
+      - sessionId
+      - sessionExpiresAt
+      properties:
+        accessToken:
+          type: string
+          description: 'JWT RS256 (ADR-012). Se envía como `Authorization: Bearer <token>`.'
+        expiresIn:
+          type: integer
+          format: int64
+          description: Segundos de vida del token (600, o menos si la sesión vence antes).
+          example: 600
+        sessionExpiresAt:
+          type: string
+          format: date-time
+          description: La sesión dura 12 h desde el login.
+        sessionId:
+          type: string
+          format: uuid
+          description: Igual al claim `sid`.
+        tokenType:
+          type: string
+          example: Bearer
+    UsuarioDto:
+      type: object
+      required:
+      - id
+      - ci
+      - firstNames
+      - lastNames
+      - fullName
+      - email
+      - phone
+      - role
+      - status
+      properties:
+        ci:
+          type: string
+          description: 'Forma canónica: número y complemento separados por guion.'
+          example: 1234567-1A
+        email:
+          type: string
+          example: ana@example.com
+        firstNames:
+          type: string
+          example: Ana María
+        fullName:
+          type: string
+          example: Ana María Pérez Cruz
+        id:
+          type: string
+          format: uuid
+        lastNames:
+          type: string
+          example: Pérez Cruz
+        organizerId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+          description: Solo para ORGANIZADOR e INSPECTOR.
+        phone:
+          type: string
+          example: '71234567'
+        role:
+          type: string
+          description: ADMIN, ORGANIZADOR, INSPECTOR o CIUDADANO.
+          example: CIUDADANO
+        status:
+          type: string
+          example: ACTIVE
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: usuarios
+  description: Registro y perfil
+- name: sesiones
+  description: Login, sesión actual y logout
+- name: operación
+  description: Clave pública y estado del servicio
