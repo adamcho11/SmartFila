@@ -167,6 +167,34 @@ services:
       - backend
     restart: unless-stopped
 
+  gateway:
+    build:
+      context: ./gateway/graphql
+      dockerfile: Dockerfile
+    image: smartfila/graphql-gateway:dev
+    environment:
+      PORT: 8085
+      IDENTITY_BASE_URL: http://identity:8080
+      INVENTORY_BASE_URL: http://inventory:8080
+      QUEUE_BASE_URL: http://queue:8080
+    depends_on:
+      identity:
+        condition: service_healthy
+      inventory:
+        condition: service_started
+      queue:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8085:8085"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8085/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
 volumes:
   jwt-keys:
   identity-db-data:
