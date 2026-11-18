@@ -161,11 +161,32 @@ services:
     image: smartfila/queue:dev
     environment:
       ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__QueueDatabase: Host=queue-db;Port=5432;Database=smartfila_queue;Username=queue;Password=${QUEUE_DB_PASSWORD}
+    depends_on:
+      queue-db:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8083:8080"
     networks:
       - backend
+      - queue-data
     restart: unless-stopped
+
+  queue-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: smartfila_queue
+      POSTGRES_USER: queue
+      POSTGRES_PASSWORD: ${QUEUE_DB_PASSWORD:?define QUEUE_DB_PASSWORD en .env}
+    volumes:
+      - queue-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U queue -d smartfila_queue"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - queue-data
 
   gateway:
     build:
@@ -200,6 +221,7 @@ volumes:
   identity-db-data:
   inventory-db-data:
   sales-db-data:
+  queue-db-data:
 
 networks:
   # Red común de los servicios, el gateway y NGINX.
@@ -210,3 +232,4 @@ networks:
   inventory-data:
     internal: true
   sales-data:
+  queue-data:

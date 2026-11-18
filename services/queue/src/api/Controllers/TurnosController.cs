@@ -4,7 +4,8 @@ using Queue.Application;
 namespace Queue.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/turnos")]
+[Route("api/turnos")]
 public sealed class TurnosController(TurnoService service) : ControllerBase
 {
     [HttpGet]
@@ -37,5 +38,18 @@ public sealed class TurnosController(TurnoService service) : ControllerBase
     {
         var turno = await service.ReleaseAsync(id, cancellationToken);
         return turno is null ? NotFound() : Ok(turno);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<TurnoResponse>> Update(Guid id, CreateTurnoRequest request, CancellationToken cancellationToken)
+    {
+        var turno = await service.UpdateAsync(id, request, cancellationToken);
+        return turno is null ? NotFound() : Ok(turno);
+    }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        return await service.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound();
     }
 }

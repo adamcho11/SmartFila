@@ -5,6 +5,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+    {
+        Title = "SmartFila Inventory API",
+        Version = "v1",
+        Description = "Inventory and product management API"
+    });
+});
 
 builder.Services.AddDbContext<Inventory.Infrastructure.InventoryDbContext>(options =>
 {
@@ -23,10 +33,13 @@ using (var scope = app.Services.CreateScope())
     await db.Database.EnsureCreatedAsync();
 }
 
-if (app.Environment.IsDevelopment())
+app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.MapOpenApi();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Inventory API v1");
+    options.RoutePrefix = "docs";
+});
 
 app.UseAuthorization();
 
