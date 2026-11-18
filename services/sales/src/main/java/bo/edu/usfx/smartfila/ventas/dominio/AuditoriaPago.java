@@ -15,8 +15,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "auditoria_pagos", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_auditoria_orden_evento", columnNames = {"orden_id", "evento"}),
-        @UniqueConstraint(name = "uk_auditoria_referencia_pago", columnNames = "referencia_pago")
+        @UniqueConstraint(name = "uk_auditoria_orden_evento", columnNames = {"orden_id", "evento"})
 })
 public class AuditoriaPago {
 

@@ -16,6 +16,7 @@ import java.util.UUID;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,5 +55,27 @@ class SeguridadVentasIntegracionTest {
     void pingDeDisponibilidadEsPublico() throws Exception {
         mockMvc.perform(get("/api/v1/ventas/ping").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void ciudadanoNoPuedeUsarLaVerificacionDeInspector() throws Exception {
+        mockMvc.perform(get("/api/v1/ventas/verificaciones/qr/qr-inexistente")
+                        .with(jwt().jwt(token -> token
+                                .subject(UUID.randomUUID().toString())
+                                .claim("roles", List.of("CIUDADANO")))
+                                .authorities(new SimpleGrantedAuthority("ROLE_CIUDADANO"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void inspectorPuedeVerificarYSeRechazaQrInexistente() throws Exception {
+        mockMvc.perform(get("/api/v1/ventas/verificaciones/qr/qr-inexistente")
+                        .with(jwt().jwt(token -> token
+                                .subject(UUID.randomUUID().toString())
+                                .claim("roles", List.of("INSPECTOR")))
+                                .authorities(new SimpleGrantedAuthority("ROLE_INSPECTOR"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valido").value(false))
+                .andExpect(jsonPath("$.motivo").value("QR_NO_ENCONTRADO"));
     }
 }

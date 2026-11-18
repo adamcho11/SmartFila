@@ -66,7 +66,7 @@ public class ComprobantePdfService {
         }
 
         String urlQr = baseUrlVerificacion
-                + "/api/v1/ventas/verificaciones-qr/" + orden.getReferenciaQr();
+                + "/api/v1/ventas/verificaciones/qr/" + orden.getReferenciaQr();
         try (PDDocument documento = new PDDocument();
              ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
             PDPage pagina = new PDPage(PDRectangle.A4);

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +34,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/ventas")
 @Tag(name = "Ventas", description = "Órdenes de cobro del microservicio de Ventas")
+@SecurityRequirement(name = "bearerAuth")
 public class VentasController {
 
     private final OrdenCobroService service;
@@ -47,6 +49,7 @@ public class VentasController {
     }
 
     @GetMapping("/ping")
+    @Operation(summary = "Comprobación de disponibilidad", security = {})
     public Map<String, String> ping() {
         return Map.of("servicio", "ventas-service", "estado", "UP");
     }
@@ -119,6 +122,11 @@ public class VentasController {
                         "attachment; filename=\"comprobante-" + id + ".pdf\"")
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .body(pdf);
+    }
+
+    @PostMapping("/{id}/anulaciones")
+    public OrdenCobroRespuesta anularVenta(@PathVariable UUID id) {
+        return service.anular(id);
     }
 
     private void validarAccesoComprador(UUID compradorId, Jwt jwt) {

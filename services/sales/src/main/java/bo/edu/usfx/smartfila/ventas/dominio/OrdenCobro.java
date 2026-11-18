@@ -56,6 +56,9 @@ public class OrdenCobro {
     @Column(name = "confirmada_en")
     private Instant confirmadaEn;
 
+    @Column(name = "anulada_en")
+    private Instant anuladaEn;
+
     @Column(name = "referencia_pago", unique = true, length = 100)
     private String referenciaPago;
 
@@ -177,6 +180,18 @@ public class OrdenCobro {
 
     public Instant getConfirmadaEn() {
         return confirmadaEn;
+    }
+
+    public Instant getAnuladaEn() { return anuladaEn; }
+
+    public boolean anular(Instant ahora) {
+        if (estado == EstadoOrdenCobro.ANULADO) return false;
+        if (estado != EstadoOrdenCobro.CONFIRMADO) {
+            throw new IllegalStateException("Solo se puede anular una venta confirmada");
+        }
+        estado = EstadoOrdenCobro.ANULADO;
+        anuladaEn = ahora;
+        return true;
     }
 
     public boolean expirarSiVencida(Instant ahora) {

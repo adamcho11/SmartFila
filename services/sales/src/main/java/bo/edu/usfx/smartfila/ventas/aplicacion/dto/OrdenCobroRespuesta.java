@@ -17,7 +17,8 @@ public record OrdenCobroRespuesta(
         String contenidoQr,
         Instant creadaEn,
         Instant venceEn,
-        Instant confirmadaEn
+        Instant confirmadaEn,
+        Instant anuladaEn
 ) {
     public static OrdenCobroRespuesta desde(OrdenCobro orden) {
         return new OrdenCobroRespuesta(
@@ -30,7 +31,8 @@ public record OrdenCobroRespuesta(
                 orden.getContenidoQr(),
                 orden.getCreadaEn(),
                 orden.getVenceEn(),
-                orden.getConfirmadaEn()
+                orden.getConfirmadaEn(),
+                orden.getAnuladaEn()
         );
     }
 }

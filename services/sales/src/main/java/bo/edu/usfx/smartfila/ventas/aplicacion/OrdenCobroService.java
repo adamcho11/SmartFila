@@ -167,4 +167,26 @@ public class OrdenCobroService {
         }
         return OrdenCobroRespuesta.desde(guardada);
     }
+
+    @Transactional
+    public OrdenCobroRespuesta anular(UUID ordenId) {
+        OrdenCobro orden = repository.findById(ordenId)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No existe la orden de cobro indicada"
+                ));
+        try {
+            if (orden.anular(Instant.now())) {
+                repository.save(orden);
+                auditoriaRepository.save(new AuditoriaPago(
+                        ordenId,
+                        "VENTA_ANULADA",
+                        orden.getReferenciaPago(),
+                        orden.getMonto()
+                ));
+            }
+        } catch (IllegalStateException exception) {
+            throw new ConflictoNegocioException(exception.getMessage());
+        }
+        return OrdenCobroRespuesta.desde(orden);
+    }
 }

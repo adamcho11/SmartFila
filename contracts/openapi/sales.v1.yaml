@@ -11,6 +11,8 @@ security:
 tags:
 - name: Ventas
   description: Órdenes de cobro del microservicio de Ventas
+- name: Inspección
+  description: Verificación de comprobantes por inspectores autorizados
 paths:
   /api/v1/ventas:
     get:
@@ -35,6 +37,7 @@ paths:
           - CONFIRMADO
           - RECHAZADO
           - EXPIRADO
+          - ANULADO
       - name: page
         in: query
         description: Zero-based page index (0..N)
@@ -200,6 +203,75 @@ paths:
           description: Orden inexistente
         "409":
           description: El pago sigue pendiente o faltan datos de la reserva
+  /api/v1/ventas/{id}/anulaciones:
+    post:
+      tags: [Ventas]
+      operationId: anularVenta
+      summary: Anula una venta confirmada (solo ADMIN)
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Venta anulada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+        "403":
+          description: El rol no está autorizado
+        "404":
+          description: Orden inexistente
+        "409":
+          description: Solo se anulan ventas confirmadas
+  /api/v1/ventas/verificaciones/qr/{referenciaQr}:
+    get:
+      tags: [Inspección]
+      operationId: verificarQr
+      summary: Verifica un comprobante por QR (INSPECTOR o ADMIN)
+      parameters:
+      - name: referenciaQr
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: El QR inexistente o anulado se devuelve como inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificacionComprobanteRespuesta"
+        "401":
+          description: JWT requerido
+        "403":
+          description: Se requiere rol INSPECTOR o ADMIN
+  /api/v1/ventas/verificaciones/ci/{ci}:
+    get:
+      tags: [Inspección]
+      operationId: verificarCi
+      summary: Busca comprobantes vigentes por C.I. (INSPECTOR o ADMIN)
+      parameters:
+      - name: ci
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Comprobantes vigentes del titular
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificacionCiRespuesta"
+        "401":
+          description: JWT requerido
+        "403":
+          description: Se requiere rol INSPECTOR o ADMIN
   /api/v1/ventas/ping:
     get:
       security: []
@@ -246,6 +318,7 @@ components:
           - CONFIRMADO
           - RECHAZADO
           - EXPIRADO
+          - ANULADO
         referenciaQr:
           type: string
         contenidoQr:
@@ -257,6 +330,9 @@ components:
           type: string
           format: date-time
         confirmadaEn:
+          type: string
+          format: date-time
+        anuladaEn:
           type: string
           format: date-time
     AuditoriaPagoRespuesta:
@@ -277,6 +353,39 @@ components:
         registradaEn:
           type: string
           format: date-time
+    VerificacionComprobanteRespuesta:
+      type: object
+      properties:
+        valido:
+          type: boolean
+        motivo:
+          type: string
+        ordenId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+          enum: [PENDIENTE, CONFIRMADO, RECHAZADO, EXPIRADO, ANULADO]
+        compradorNombre:
+          type: string
+        compradorCi:
+          type: string
+        sector:
+          type: string
+        unidad:
+          type: string
+        confirmadaEn:
+          type: string
+          format: date-time
+    VerificacionCiRespuesta:
+      type: object
+      properties:
+        valido:
+          type: boolean
+        comprobantes:
+          type: array
+          items:
+            $ref: "#/components/schemas/VerificacionComprobanteRespuesta"
     PageOrdenCobroRespuesta:
       type: object
       properties:
