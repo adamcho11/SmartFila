@@ -5,6 +5,8 @@ import { createGatewaySchema } from "./schema.js";
 const identityUrl = process.env.IDENTITY_BASE_URL || "http://localhost:8081";
 const inventoryUrl = process.env.INVENTORY_BASE_URL || "http://localhost:8082";
 const queueUrl = process.env.QUEUE_BASE_URL || "http://localhost:8083";
+const identityGrpcTarget = process.env.IDENTITY_GRPC_TARGET || "localhost:50051";
+const identityGrpcDeadlineMs = process.env.GRPC_DEADLINE_MS || "200";
 const port = Number(process.env.PORT || 8085);
 
 const app = express();
@@ -14,7 +16,13 @@ app.get("/health", (_request, response) => {
 });
 
 const yoga = createYoga({
-  schema: createGatewaySchema({ identityUrl, inventoryUrl, queueUrl }),
+  schema: createGatewaySchema({
+    identityUrl,
+    identityGrpcTarget,
+    identityGrpcDeadlineMs,
+    inventoryUrl,
+    queueUrl
+  }),
   graphqlEndpoint: "/graphql",
   landingPage: true
 });

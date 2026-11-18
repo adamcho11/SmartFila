@@ -1,7 +1,14 @@
 import { createSchema } from "graphql-yoga";
 import { fetchIdentity, fetchInventory, fetchQueue } from "./clients.js";
+import { validateIdentitySession } from "./grpc-client.js";
 
-export function createGatewaySchema({ identityUrl, inventoryUrl, queueUrl }) {
+export function createGatewaySchema({
+  identityUrl,
+  identityGrpcTarget,
+  identityGrpcDeadlineMs,
+  inventoryUrl,
+  queueUrl
+}) {
   return createSchema({
     typeDefs: /* GraphQL */ `
       type IdentityStatus {
@@ -38,8 +45,20 @@ export function createGatewaySchema({ identityUrl, inventoryUrl, queueUrl }) {
         queue: [Turno!]!
       }
 
+      type SessionValidation {
+        active: Boolean!
+        status: String!
+        errorCode: String
+        sessionId: ID
+        userId: ID
+        roles: [String!]!
+        organizerId: ID
+        expiresAt: String
+      }
+
       type Query {
         overview: SmartFilaOverview!
+        validateSession(sessionId: ID!): SessionValidation!
       }
     `,
     resolvers: {
@@ -52,7 +71,14 @@ export function createGatewaySchema({ identityUrl, inventoryUrl, queueUrl }) {
           ]);
 
           return { identity, inventory, queue };
-        }
+        },
+        validateSession: async (_parent, args, context) =>
+          validateIdentitySession({
+            target: identityGrpcTarget,
+            sessionId: args.sessionId,
+            deadlineMs: identityGrpcDeadlineMs,
+            correlationId: context?.correlationId
+          })
       }
     }
   });

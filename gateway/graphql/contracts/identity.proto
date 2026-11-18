@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package smartfila.identity.v1;
+
+service IdentityService {
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+}
+
+message ValidateSessionRequest {
+  string session_id = 1;
+}
+
+message ValidateSessionResponse {
+  string session_id = 1;
+  string user_id = 2;
+  repeated string roles = 3;
+  string organizer_id = 4;
+  Timestamp expires_at = 5;
+}
+
+message Timestamp {
+  int64 seconds = 1;
+  int32 nanos = 2;
+}
