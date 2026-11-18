@@ -1,0 +1,262 @@
+openapi: 3.1.0
+info:
+  title: SmartFila - Ventas API
+  description: API REST del microservicio de Ventas
+  version: v1
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Ventas
+  description: Órdenes de cobro del microservicio de Ventas
+paths:
+  /api/v1/ventas:
+    get:
+      tags:
+      - Ventas
+      summary: Lista las órdenes de cobro de un comprador
+      operationId: listarPorComprador
+      parameters:
+      - name: compradorId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: estado
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - PENDIENTE
+          - CONFIRMADO
+          - RECHAZADO
+          - EXPIRADO
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          default:
+          - "creadaEn,DESC"
+          items:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageOrdenCobroRespuesta"
+    post:
+      tags:
+      - Ventas
+      summary: Crea una orden de cobro para una reserva activa
+      operationId: crear
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrearOrdenCobroSolicitud"
+        required: true
+      responses:
+        "201":
+          description: Orden de cobro creada
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+        "400":
+          description: Solicitud inválida
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+        "404":
+          description: Reserva inexistente
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+        "409":
+          description: Reserva no activa o vencida
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+        "503":
+          description: Inventario no disponible
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+  /api/v1/ventas/{id}:
+    get:
+      tags:
+      - Ventas
+      operationId: buscarPorId
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+  /api/v1/ventas/referencias-qr/{referenciaQr}:
+    get:
+      tags:
+      - Ventas
+      operationId: buscarPorQr
+      parameters:
+      - name: referenciaQr
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OrdenCobroRespuesta"
+  /api/v1/ventas/ping:
+    get:
+      tags:
+      - Ventas
+      operationId: ping
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+components:
+  schemas:
+    CrearOrdenCobroSolicitud:
+      type: object
+      properties:
+        reservaId:
+          type: string
+          format: uuid
+      required:
+      - reservaId
+    OrdenCobroRespuesta:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservaId:
+          type: string
+          format: uuid
+        monto:
+          type: number
+        estado:
+          type: string
+          enum:
+          - PENDIENTE
+          - CONFIRMADO
+          - RECHAZADO
+          - EXPIRADO
+        referenciaQr:
+          type: string
+        contenidoQr:
+          type: string
+        creadaEn:
+          type: string
+          format: date-time
+        venceEn:
+          type: string
+          format: date-time
+        confirmadaEn:
+          type: string
+          format: date-time
+    PageOrdenCobroRespuesta:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrdenCobroRespuesta"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        unpaged:
+          type: boolean
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
