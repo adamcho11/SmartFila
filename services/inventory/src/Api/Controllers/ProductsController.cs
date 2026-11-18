@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Inventory.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/products")]
+[Route("api/products")]
 public sealed class ProductsController(ProductService service) : ControllerBase
 {
     [HttpGet]

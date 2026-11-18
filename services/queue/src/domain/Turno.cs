@@ -10,8 +10,8 @@ public enum EstadoTurno
 public sealed class Turno
 {
     public Guid Id { get; private init; } = Guid.CreateVersion7();
-    public Guid UsuarioId { get; private init; }
-    public string PuestoId { get; private init; } = string.Empty;
+    public Guid UsuarioId { get; private set; }
+    public string PuestoId { get; private set; } = string.Empty;
     public int Posicion { get; private init; }
     public EstadoTurno Estado { get; private set; } = EstadoTurno.EnEspera;
 
@@ -33,4 +33,17 @@ public sealed class Turno
 
     public void Admitir() => Estado = EstadoTurno.Admitido;
     public void Liberar() => Estado = EstadoTurno.Liberado;
+
+    public void Actualizar(Guid usuarioId, string puestoId)
+    {
+        if (Estado != EstadoTurno.EnEspera)
+            throw new InvalidOperationException("Only waiting turns can be updated.");
+        if (usuarioId == Guid.Empty)
+            throw new ArgumentException("UsuarioId is required.", nameof(usuarioId));
+        if (string.IsNullOrWhiteSpace(puestoId))
+            throw new ArgumentException("PuestoId is required.", nameof(puestoId));
+
+        UsuarioId = usuarioId;
+        PuestoId = puestoId.Trim();
+    }
 }

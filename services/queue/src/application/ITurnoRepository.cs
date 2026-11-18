@@ -9,4 +9,5 @@ public interface ITurnoRepository
     Task<int> GetNextPositionAsync(CancellationToken cancellationToken = default);
     Task AddAsync(Turno turno, CancellationToken cancellationToken = default);
     Task UpdateAsync(Turno turno, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

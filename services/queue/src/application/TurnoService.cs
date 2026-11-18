@@ -36,6 +36,23 @@ public sealed class TurnoService(ITurnoRepository repository)
         return Map(turno);
     }
 
+    public async Task<TurnoResponse?> UpdateAsync(Guid id, CreateTurnoRequest request, CancellationToken cancellationToken = default)
+    {
+        var turno = await repository.GetByIdAsync(id, cancellationToken);
+        if (turno is null) return null;
+
+        turno.Actualizar(request.UsuarioId, request.PuestoId);
+        await repository.UpdateAsync(turno, cancellationToken);
+        return Map(turno);
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        if (await repository.GetByIdAsync(id, cancellationToken) is null) return false;
+        await repository.DeleteAsync(id, cancellationToken);
+        return true;
+    }
+
     private static TurnoResponse Map(Turno turno) =>
         new(turno.Id, turno.UsuarioId, turno.PuestoId, turno.Posicion, turno.Estado);
 }
