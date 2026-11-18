@@ -1,13 +1,25 @@
 using Inventory.Application;
+using Inventory.Domain;
+using Inventory.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Inventory.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/products")]
 [Route("api/products")]
-public sealed class ProductsController(ProductService service) : ControllerBase
+public sealed class ProductsController(ProductService service, InventoryDbContext db) : ControllerBase
 {
+    [HttpGet("processed-events")]
+    public async Task<ActionResult<IReadOnlyList<ProcessedMessage>>> GetProcessedEvents(CancellationToken cancellationToken)
+    {
+        var events = await db.ProcessedMessages
+            .AsNoTracking()
+            .OrderByDescending(x => x.ProcessedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(events);
+    }
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ProductResponse>>> GetAll(CancellationToken cancellationToken)
     {

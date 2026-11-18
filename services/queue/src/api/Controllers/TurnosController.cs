@@ -1,13 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Queue.Application;
+using Queue.Domain;
+using Queue.Infrastructure;
 
 namespace Queue.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/turnos")]
 [Route("api/turnos")]
-public sealed class TurnosController(TurnoService service) : ControllerBase
+public sealed class TurnosController(TurnoService service, QueueDbContext db) : ControllerBase
 {
+    [HttpGet("processed-events")]
+    public async Task<ActionResult<IReadOnlyList<ProcessedMessage>>> GetProcessedEvents(CancellationToken cancellationToken)
+    {
+        var events = await db.ProcessedMessages
+            .AsNoTracking()
+            .OrderByDescending(x => x.ProcessedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(events);
+    }
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<TurnoResponse>>> GetAll(CancellationToken cancellationToken) =>
         Ok(await service.GetAllAsync(cancellationToken));

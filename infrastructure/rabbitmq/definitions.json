@@ -1,0 +1,102 @@
+{
+  "rabbit_version": "4.0",
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "smartfila.domain",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "smartfila.dlx",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "inventario.venta-confirmada",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": 3,
+        "x-dead-letter-exchange": "smartfila.dlx",
+        "x-dead-letter-routing-key": "inventario.venta-confirmada.dlq"
+      }
+    },
+    {
+      "name": "inventario.venta-confirmada.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "cola.venta-confirmada",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-delivery-limit": 3,
+        "x-dead-letter-exchange": "smartfila.dlx",
+        "x-dead-letter-routing-key": "cola.venta-confirmada.dlq"
+      }
+    },
+    {
+      "name": "cola.venta-confirmada.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "smartfila.domain",
+      "vhost": "/",
+      "destination": "inventario.venta-confirmada",
+      "destination_type": "queue",
+      "routing_key": "venta.confirmada",
+      "arguments": {}
+    },
+    {
+      "source": "smartfila.dlx",
+      "vhost": "/",
+      "destination": "inventario.venta-confirmada.dlq",
+      "destination_type": "queue",
+      "routing_key": "inventario.venta-confirmada.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "smartfila.domain",
+      "vhost": "/",
+      "destination": "cola.venta-confirmada",
+      "destination_type": "queue",
+      "routing_key": "venta.confirmada",
+      "arguments": {}
+    },
+    {
+      "source": "smartfila.dlx",
+      "vhost": "/",
+      "destination": "cola.venta-confirmada.dlq",
+      "destination_type": "queue",
+      "routing_key": "cola.venta-confirmada.dlq",
+      "arguments": {}
+    }
+  ]
+}

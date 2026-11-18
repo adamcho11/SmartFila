@@ -24,6 +24,7 @@ builder.Services.AddDbContext<Inventory.Infrastructure.InventoryDbContext>(optio
 
 builder.Services.AddScoped<Inventory.Application.IProductRepository, Inventory.Infrastructure.ProductRepository>();
 builder.Services.AddScoped<Inventory.Application.ProductService>();
+builder.Services.AddHostedService<Inventory.Api.Messaging.VentaConfirmadaConsumer>();
 
 var app = builder.Build();
 
@@ -31,6 +32,14 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<Inventory.Infrastructure.InventoryDbContext>();
     await db.Database.EnsureCreatedAsync();
+    await db.Database.ExecuteSqlRawAsync("""
+        CREATE TABLE IF NOT EXISTS processed_messages (
+            "EventId" uuid PRIMARY KEY,
+            "EventType" character varying(100) NOT NULL,
+            "OrderId" character varying(100),
+            "ProcessedAt" timestamp with time zone NOT NULL
+        );
+        """);
 }
 
 app.MapOpenApi();

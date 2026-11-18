@@ -55,6 +55,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/ventas",
                                 "/api/v1/ventas/*/confirmaciones-pago-simuladas")
                         .hasRole("CIUDADANO")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/ventas/*/republicar-evento",
+                                "/api/v1/ventas/eventos-fallo-simulado")
+                        .hasAnyRole("CIUDADANO", "ADMIN", "ORGANIZADOR")
                         .requestMatchers("/api/v1/ventas/**").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt ->
