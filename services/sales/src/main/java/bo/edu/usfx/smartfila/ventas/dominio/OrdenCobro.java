@@ -16,6 +16,9 @@ public class OrdenCobro {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Version
+    private long version;
+
     @Column(name = "reserva_id", nullable = false)
     private UUID reservaId;
 
