@@ -1,11 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY src/Domain/Inventory.Domain.csproj src/Domain/
-COPY src/Application/Inventory.Application.csproj src/Application/
-COPY src/Infrastructure/Inventory.Infrastructure.csproj src/Infrastructure/
-COPY src/Api/Inventory.Api.csproj src/Api/
+COPY services/inventory/src/ src/
 RUN dotnet restore src/Api/Inventory.Api.csproj
-COPY src/ src/
 RUN dotnet publish src/Api/Inventory.Api.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
