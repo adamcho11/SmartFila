@@ -17,6 +17,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -53,8 +55,18 @@ class SeguridadVentasIntegracionTest {
 
     @Test
     void pingDeDisponibilidadEsPublico() throws Exception {
-        mockMvc.perform(get("/api/v1/ventas/ping").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/ventas/ping")
+                        .header("X-Correlation-Id", "prueba-123")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Correlation-Id", "prueba-123"));
+    }
+
+    @Test
+    void endpointPrometheusEstaExpuesto() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/plain"));
     }
 
     @Test

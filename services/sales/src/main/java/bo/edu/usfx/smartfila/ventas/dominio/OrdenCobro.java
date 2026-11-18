@@ -17,6 +17,7 @@ public class OrdenCobro {
     private UUID id;
 
     @Version
+    @Column(columnDefinition = "bigint default 0 not null")
     private long version;
 
     @Column(name = "reserva_id", nullable = false)

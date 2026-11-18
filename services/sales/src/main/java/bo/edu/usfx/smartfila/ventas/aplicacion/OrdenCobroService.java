@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import bo.edu.usfx.smartfila.ventas.config.VentasMetrics;
 
 @Service
 @Transactional(readOnly = true)
@@ -30,15 +31,18 @@ public class OrdenCobroService {
     private final OrdenCobroRepository repository;
     private final InventarioClient inventarioClient;
     private final AuditoriaPagoRepository auditoriaRepository;
+    private final VentasMetrics metrics;
 
     public OrdenCobroService(
             OrdenCobroRepository repository,
             InventarioClient inventarioClient,
-            AuditoriaPagoRepository auditoriaRepository
+            AuditoriaPagoRepository auditoriaRepository,
+            VentasMetrics metrics
     ) {
         this.repository = repository;
         this.inventarioClient = inventarioClient;
         this.auditoriaRepository = auditoriaRepository;
+        this.metrics = metrics;
     }
 
     public Page<OrdenCobroRespuesta> listarPorComprador(
@@ -129,7 +133,9 @@ public class OrdenCobroService {
                 reserva.unidad()
         );
 
-        return OrdenCobroRespuesta.desde(repository.save(orden));
+        OrdenCobroRespuesta respuesta = OrdenCobroRespuesta.desde(repository.save(orden));
+        metrics.ordenCreada();
+        return respuesta;
     }
 
     @Transactional(noRollbackFor = ConflictoNegocioException.class)
@@ -164,6 +170,7 @@ public class OrdenCobroService {
             auditoriaRepository.save(new AuditoriaPago(
                     ordenId, "PAGO_CONFIRMADO", solicitud.referenciaPago(), solicitud.monto()
             ));
+            metrics.pagoConfirmado();
         }
         return OrdenCobroRespuesta.desde(guardada);
     }

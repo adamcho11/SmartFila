@@ -14,6 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.UUID;
+import org.slf4j.MDC;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -66,7 +67,8 @@ public class GlobalExceptionHandler {
             String message,
             List<DetalleError> details
     ) {
-        String traceId = UUID.randomUUID().toString();
+        String traceId = MDC.get("correlationId");
+        if (traceId == null) traceId = UUID.randomUUID().toString();
         CuerpoError cuerpo = new CuerpoError(code, message, details, traceId);
 
         return ResponseEntity.status(status)

@@ -10,19 +10,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import bo.edu.usfx.smartfila.ventas.config.VentasMetrics;
 
 @Service
 public class InspeccionService {
 
     private final OrdenCobroRepository ordenRepository;
     private final AuditoriaInspeccionRepository auditoriaRepository;
+    private final VentasMetrics metrics;
 
     public InspeccionService(
             OrdenCobroRepository ordenRepository,
-            AuditoriaInspeccionRepository auditoriaRepository
+            AuditoriaInspeccionRepository auditoriaRepository,
+            VentasMetrics metrics
     ) {
         this.ordenRepository = ordenRepository;
         this.auditoriaRepository = auditoriaRepository;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -36,6 +40,7 @@ public class InspeccionService {
                 "QR",
                 valido
         ));
+        metrics.inspeccion("QR", valido);
         return orden.map(VerificacionComprobanteRespuesta::desde)
                 .orElseGet(VerificacionComprobanteRespuesta::noEncontrado);
     }
@@ -48,6 +53,7 @@ public class InspeccionService {
         auditoriaRepository.save(new AuditoriaInspeccion(
                 null, inspectorId, "CI", !ordenes.isEmpty()
         ));
+        metrics.inspeccion("CI", !ordenes.isEmpty());
         var comprobantes = ordenes.stream()
                 .map(VerificacionComprobanteRespuesta::desde)
                 .toList();
