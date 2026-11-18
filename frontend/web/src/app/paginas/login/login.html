@@ -1,0 +1,62 @@
+<div class="acceso">
+  <app-portada-acceso />
+
+  <section class="tarjeta tarjeta--acceso">
+    <h2 class="tarjeta__titulo">Ingresar</h2>
+    <p class="ayuda">Usa tu cédula de identidad y tu contraseña.</p>
+
+    @if (motivo() === 'vencida') {
+      <p class="aviso">Tu sesión venció o se abrió en otro dispositivo. Vuelve a ingresar.</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="ingresar()" novalidate>
+      <div class="fila-campos">
+        <label class="campo campo--ancho">
+          <span>C.I.</span>
+          <input
+            formControlName="ci"
+            inputmode="numeric"
+            autocomplete="username"
+            placeholder="1234567"
+          />
+          @if (form.controls.ci.touched && form.controls.ci.invalid) {
+            <small class="campo__error">Entre 5 y 10 dígitos.</small>
+          }
+        </label>
+        <label class="campo campo--corto">
+          <span>Compl.</span>
+          <input formControlName="complemento" maxlength="2" placeholder="1A" />
+          @if (form.controls.complemento.touched && form.controls.complemento.invalid) {
+            <small class="campo__error">2 caracteres.</small>
+          }
+        </label>
+      </div>
+
+      <label class="campo">
+        <span>Contraseña</span>
+        <app-campo-clave>
+          <input formControlName="password" type="password" autocomplete="current-password" />
+        </app-campo-clave>
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <small class="campo__error">Obligatoria.</small>
+        }
+      </label>
+
+      @if (error(); as e) {
+        <p class="alerta" role="alert">{{ e.mensaje }}</p>
+      }
+
+      <button type="submit" class="boton boton--primario boton--bloque" [disabled]="enviando()">
+        @if (enviando()) {
+          <span class="girando" aria-hidden="true"></span> Ingresando…
+        } @else {
+          Ingresar <app-icono nombre="flecha" />
+        }
+      </button>
+    </form>
+
+    <p class="pie-tarjeta">
+      ¿No tienes cuenta? <a routerLink="/registro">Regístrate como ciudadano</a>
+    </p>
+  </section>
+</div>

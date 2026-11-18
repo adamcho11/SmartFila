@@ -1,0 +1,216 @@
+<div class="encabezado">
+  <div>
+    <p class="encabezado__antetitulo">Panel</p>
+    <h1>Hola, {{ nombre() }}</h1>
+    <p class="ayuda">Así está SmartFila ahora mismo, con datos reales de cada servicio.</p>
+  </div>
+  <div class="encabezado__acciones">
+    <span class="actualizado" [class.actualizado--error]="error()">
+      @for (marca of [actualizado()?.getTime()]; track marca) {
+        <svg class="anillo" viewBox="0 0 20 20" [style.--duracion]="refrescoSegundos + 's'">
+          <circle class="anillo__pista" cx="10" cy="10" r="8" />
+          <circle class="anillo__avance" cx="10" cy="10" r="8" />
+        </svg>
+      }
+      @if (error()) {
+        Sin conexión
+      } @else if (actualizado(); as hora) {
+        Actualizado a las {{ hora | date: 'HH:mm:ss' }}
+      } @else {
+        Conectando…
+      }
+    </span>
+    <button
+      type="button"
+      class="boton boton--suave"
+      (click)="cargar()"
+      [disabled]="cargando()"
+      aria-label="Actualizar ahora"
+    >
+      <app-icono nombre="actualizar" [class.girando-icono]="cargando()" />
+      <span class="solo-ancho">Actualizar</span>
+    </button>
+  </div>
+</div>
+
+<!-- Recorrido de la consulta: 1 petición del navegador, 3 servicios detrás del gateway -->
+<div class="trayecto" aria-label="Recorrido de la consulta">
+  <span class="trayecto__nodo">Navegador</span>
+  <span class="trayecto__linea"></span>
+  <span class="trayecto__nodo trayecto__nodo--gateway"
+    ><app-icono nombre="codigo" /> Gateway GraphQL</span
+  >
+  <span class="trayecto__linea"></span>
+  <span class="trayecto__servicios">
+    <span class="trayecto__nodo" [class.ok]="datos()?.identity?.status === 'UP'">Identity</span>
+    <span class="trayecto__nodo" [class.ok]="datos()">Inventario</span>
+    <span class="trayecto__nodo" [class.ok]="datos()">Cola</span>
+  </span>
+</div>
+
+@if (error(); as e) {
+  <div class="alerta" role="alert"><strong>El gateway no pudo responder.</strong> {{ e }}</div>
+}
+
+@if (datos(); as d) {
+  <section class="resumen">
+    <article class="indicador" style="--i: 0">
+      <span class="indicador__icono"><app-icono nombre="escudo" /></span>
+      <div>
+        <h2>Identity</h2>
+        <p class="indicador__valor">
+          <span class="punto" [class.punto--ok]="d.identity.status === 'UP'"></span>
+          {{ d.identity.status === 'UP' ? 'Operativo' : d.identity.status }}
+        </p>
+        <p class="indicador__nota">
+          Base de datos {{ d.identity.database }} · clave {{ d.identity.signingKey ?? '—' }}
+        </p>
+      </div>
+    </article>
+    <article class="indicador" style="--i: 1">
+      <span class="indicador__icono"><app-icono nombre="puestos" /></span>
+      <div>
+        <h2>Inventario</h2>
+        <p class="indicador__valor">
+          {{ eventosConVenta() }}
+          <small>{{ eventosConVenta() === 1 ? 'evento' : 'eventos' }}</small>
+        </p>
+        <p class="indicador__nota">
+          {{ d.inventory.length }} {{ d.inventory.length === 1 ? 'puesto' : 'puestos' }} ·
+          {{ stockTotal() | number }} unidades disponibles
+        </p>
+      </div>
+    </article>
+    <article class="indicador" style="--i: 2">
+      <span class="indicador__icono"><app-icono nombre="personas" /></span>
+      <div>
+        <h2>Cola</h2>
+        <p class="indicador__valor">{{ enEspera() }} <small>en espera</small></p>
+        <p class="indicador__nota">
+          {{ admitidos() }} admitidos · {{ d.queue.length }} turnos en total
+        </p>
+      </div>
+    </article>
+  </section>
+
+  <section class="tarjeta" style="--i: 3">
+    <div class="tarjeta__cabecera">
+      <h2>Puestos a la venta</h2>
+      <span class="contador">{{ d.inventory.length }}</span>
+    </div>
+    @if (d.inventory.length === 0) {
+      <p class="vacio">Inventario no tiene puestos cargados todavía.</p>
+    } @else {
+      <div class="tabla-envoltura" tabindex="0" role="region" aria-label="Puestos a la venta">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Puesto</th>
+              <th>SKU</th>
+              <th class="num">Disponibles</th>
+              <th class="num">Precio</th>
+            </tr>
+          </thead>
+          @for (g of gruposPuestos(); track g.evento?.clave ?? 'sin-evento') {
+            <tbody>
+              <tr class="tabla__grupo" [class.tabla__grupo--sin-evento]="!g.evento">
+                <th colspan="4" scope="colgroup">
+                  {{ nombreEvento(g.evento) }}
+                  <span>
+                    {{ g.elementos.length }} {{ etiquetaGrupo(g.evento, g.elementos.length) }} ·
+                    {{ sumaStock(g.elementos) | number }}
+                    {{ etiquetaDisponible(g.evento, sumaStock(g.elementos)) }}
+                  </span>
+                </th>
+              </tr>
+              @for (p of g.elementos; track p.id; let i = $index) {
+                <tr [style.--i]="i">
+                  <td class="tabla__principal" data-etiqueta="Puesto">
+                    <span>
+                      {{ tituloUnidad(p.name) }}
+                      @if (g.evento && tramoDe(g.evento, p.sku); as tr) {
+                        <span class="tabla__sub">{{ tr.calle }}</span>
+                      }
+                    </span>
+                  </td>
+                  <td data-etiqueta="SKU">
+                    <code class="etiqueta-codigo">{{ p.sku }}</code>
+                  </td>
+                  <td class="num" data-etiqueta="Disponibles">{{ p.stock | number }}</td>
+                  <td class="num precio" data-etiqueta="Precio">
+                    {{ p.unitPrice | currency: 'BOB' : 'symbol-narrow' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          }
+        </table>
+      </div>
+    }
+  </section>
+
+  <section class="tarjeta" style="--i: 4">
+    <div class="tarjeta__cabecera">
+      <h2>Fila virtual</h2>
+      <span class="contador">{{ turnos().length }}</span>
+    </div>
+    @if (turnos().length === 0) {
+      <p class="vacio">Nadie está en la fila todavía.</p>
+    } @else {
+      <div class="tabla-envoltura" tabindex="0" role="region" aria-label="Fila virtual">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th class="num">N.º</th>
+              <th>Puesto</th>
+              <th>Estado</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          @for (g of gruposTurnos(); track g.evento?.clave ?? 'sin-evento') {
+            <tbody>
+              <tr class="tabla__grupo" [class.tabla__grupo--sin-evento]="!g.evento">
+                <th colspan="4" scope="colgroup">
+                  {{ nombreEvento(g.evento) }}
+                  <span>{{ contarEnEspera(g.elementos) }} en espera</span>
+                </th>
+              </tr>
+              @for (t of g.elementos; track t.id; let i = $index) {
+                <tr [class.fila-propia]="esMio(t)" [style.--i]="i">
+                  <td class="num" data-etiqueta="Turno">
+                    <span class="numero-turno">{{ numero(t) }}</span>
+                  </td>
+                  <td class="tabla__principal" data-etiqueta="Puesto">{{ nombrePuesto(t.puestoId) }}</td>
+                  <td data-etiqueta="Estado">
+                    <span class="estado estado--{{ t.estado }}">{{
+                      etiquetaEstado[t.estado]
+                    }}</span>
+                  </td>
+                  <td data-etiqueta="Usuario">
+                    @if (esMio(t)) {
+                      <span class="chip-tu">Tú</span>
+                    } @else {
+                      <code>{{ t.usuarioId.slice(0, 8) }}…</code>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          }
+        </table>
+      </div>
+    }
+  </section>
+} @else if (!error()) {
+  <section class="resumen" aria-busy="true" aria-label="Cargando">
+    @for (i of [0, 1, 2]; track i) {
+      <div class="indicador esqueleto"></div>
+    }
+  </section>
+  <div class="tarjeta esqueleto esqueleto--alto"></div>
+}
+
+<details class="consulta">
+  <summary><app-icono nombre="codigo" /> Ver la consulta GraphQL que hace esta pantalla</summary>
+  <pre>{{ consulta }}</pre>
+</details>

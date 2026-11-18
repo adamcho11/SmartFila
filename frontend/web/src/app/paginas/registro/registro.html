@@ -1,0 +1,122 @@
+<div class="acceso acceso--registro">
+  <app-portada-acceso />
+
+  <section class="tarjeta tarjeta--acceso">
+    <h2 class="tarjeta__titulo">Crear cuenta</h2>
+    <p class="ayuda">
+      Registro de ciudadano. El comprobante sale a tu nombre y no se puede transferir.
+    </p>
+
+    <form [formGroup]="form" (ngSubmit)="registrar()" novalidate>
+      <div class="fila-campos">
+        <label class="campo campo--ancho">
+          <span>C.I.</span>
+          <input
+            formControlName="ci"
+            inputmode="numeric"
+            autocomplete="username"
+            placeholder="1234567"
+          />
+          @if (mostrarError('ci')) {
+            <small class="campo__error">Entre 5 y 10 dígitos.</small>
+          } @else if (errorServidor('ci'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+        <label class="campo campo--corto">
+          <span>Compl.</span>
+          <input formControlName="ciComplement" maxlength="2" placeholder="1A" />
+          @if (mostrarError('ciComplement')) {
+            <small class="campo__error">2 caracteres.</small>
+          } @else if (errorServidor('ciComplement'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+      </div>
+
+      <div class="fila-campos">
+        <label class="campo">
+          <span>Nombres</span>
+          <input formControlName="firstNames" autocomplete="given-name" />
+          @if (mostrarError('firstNames')) {
+            <small class="campo__error">Obligatorio.</small>
+          } @else if (errorServidor('firstNames'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+        <label class="campo">
+          <span>Apellidos</span>
+          <input formControlName="lastNames" autocomplete="family-name" />
+          @if (mostrarError('lastNames')) {
+            <small class="campo__error">Obligatorio.</small>
+          } @else if (errorServidor('lastNames'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+      </div>
+
+      <div class="fila-campos">
+        <label class="campo">
+          <span>Correo</span>
+          <input formControlName="email" type="email" autocomplete="email" />
+          @if (mostrarError('email')) {
+            <small class="campo__error">Correo inválido.</small>
+          } @else if (errorServidor('email'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+        <label class="campo">
+          <span>Celular</span>
+          <input
+            formControlName="phone"
+            inputmode="numeric"
+            autocomplete="tel-national"
+            placeholder="71234567"
+          />
+          @if (mostrarError('phone')) {
+            <small class="campo__error">8 dígitos, empieza en 6 o 7.</small>
+          } @else if (errorServidor('phone'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+      </div>
+
+      <div class="fila-campos">
+        <label class="campo">
+          <span>Contraseña</span>
+          <app-campo-clave>
+            <input formControlName="password" type="password" autocomplete="new-password" />
+          </app-campo-clave>
+          @if (mostrarError('password')) {
+            <small class="campo__error">Entre 8 y 128 caracteres.</small>
+          } @else if (errorServidor('password'); as e) {
+            <small class="campo__error">{{ e }}</small>
+          }
+        </label>
+        <label class="campo">
+          <span>Repetir contraseña</span>
+          <app-campo-clave>
+            <input formControlName="confirmacion" type="password" autocomplete="new-password" />
+          </app-campo-clave>
+          @if (form.controls.confirmacion.touched && form.hasError('clavesDistintas')) {
+            <small class="campo__error">No coincide.</small>
+          }
+        </label>
+      </div>
+
+      @if (error(); as e) {
+        <p class="alerta" role="alert">{{ e.mensaje }}</p>
+      }
+
+      <button type="submit" class="boton boton--primario boton--bloque" [disabled]="enviando()">
+        @if (enviando()) {
+          <span class="girando" aria-hidden="true"></span> Creando cuenta…
+        } @else {
+          Crear cuenta e ingresar <app-icono nombre="flecha" />
+        }
+      </button>
+    </form>
+
+    <p class="pie-tarjeta">¿Ya tienes cuenta? <a routerLink="/login">Ingresa</a></p>
+  </section>
+</div>

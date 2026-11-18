@@ -1,0 +1,42 @@
+<app-fondo-animado [suave]="auth.conSesion()" />
+
+<header class="barra">
+  <div class="barra__contenido">
+    <a class="marca" routerLink="/">
+      <app-logo />
+      <span class="marca__texto">Smart<span class="marca__resalte">Fila</span></span>
+    </a>
+
+    @if (auth.conSesion()) {
+      <nav class="barra__nav" aria-label="Principal">
+        <a routerLink="/panel" routerLinkActive="activo" ariaCurrentWhenActive="page">
+          <app-icono nombre="puestos" /> <span>Panel</span>
+        </a>
+        <a routerLink="/turno" routerLinkActive="activo" ariaCurrentWhenActive="page">
+          <app-icono nombre="ticket" /> <span>Mi turno</span>
+        </a>
+      </nav>
+    }
+
+    <div class="barra__derecha">
+      @if (auth.conSesion()) {
+        @if (auth.usuario(); as u) {
+          <span class="usuario">
+            <span class="usuario__avatar" aria-hidden="true">{{ iniciales() }}</span>
+            <span class="usuario__datos">
+              <span class="usuario__nombre">{{ u.fullName }}</span>
+              <span class="usuario__rol">{{ u.role }}</span>
+            </span>
+          </span>
+        }
+        <button type="button" class="boton-icono" (click)="salir()" aria-label="Cerrar sesión">
+          <app-icono nombre="salir" />
+        </button>
+      }
+    </div>
+  </div>
+</header>
+
+<main class="contenido">
+  <router-outlet />
+</main>
