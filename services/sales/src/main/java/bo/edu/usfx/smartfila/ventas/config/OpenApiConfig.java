@@ -1,0 +1,19 @@
+package bo.edu.usfx.smartfila.ventas.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI ventasOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("SmartFila - Ventas API")
+                        .version("v1")
+                        .description("API REST del microservicio de Ventas"));
+    }
+}
