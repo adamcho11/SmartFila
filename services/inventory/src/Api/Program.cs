@@ -17,6 +17,12 @@ builder.Services.AddScoped<Inventory.Application.ProductService>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<Inventory.Infrastructure.InventoryDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
