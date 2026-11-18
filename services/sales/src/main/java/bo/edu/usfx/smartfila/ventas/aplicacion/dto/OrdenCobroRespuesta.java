@@ -10,6 +10,7 @@ import java.util.UUID;
 public record OrdenCobroRespuesta(
         UUID id,
         UUID reservaId,
+        UUID compradorId,
         BigDecimal monto,
         EstadoOrdenCobro estado,
         String referenciaQr,
@@ -22,6 +23,7 @@ public record OrdenCobroRespuesta(
         return new OrdenCobroRespuesta(
                 orden.getId(),
                 orden.getReservaId(),
+                orden.getCompradorId(),
                 orden.getMonto(),
                 orden.getEstado(),
                 orden.getReferenciaQr(),

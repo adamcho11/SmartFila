@@ -29,7 +29,7 @@ public class InventarioClientHttp implements InventarioClient {
     }
 
     @Override
-    public Optional<ReservaParaCobro> consultarReserva(UUID reservaId) {
+    public Optional<ReservaParaCobro> consultarReserva(UUID reservaId, UUID compradorSolicitanteId) {
         try {
             return Optional.ofNullable(
                     restClient.get()

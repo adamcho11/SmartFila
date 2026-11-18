@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.UUID;
@@ -117,6 +118,16 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "CONCURRENT_UPDATE",
                 "La orden cambió durante la operación; vuelve a consultar su estado",
+                List.of()
+        );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<CuerpoError> manejarAccesoDenegado(AccessDeniedException exception) {
+        return error(
+                HttpStatus.FORBIDDEN,
+                "ACCESS_DENIED",
+                "No tienes permiso para consultar este recurso",
                 List.of()
         );
     }

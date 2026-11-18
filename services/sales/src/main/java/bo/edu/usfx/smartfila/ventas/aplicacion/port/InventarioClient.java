@@ -7,5 +7,5 @@ import java.util.UUID;
 
 public interface InventarioClient {
 
-    Optional<ReservaParaCobro> consultarReserva(UUID reservaId);
+    Optional<ReservaParaCobro> consultarReserva(UUID reservaId, UUID compradorSolicitanteId);
 }

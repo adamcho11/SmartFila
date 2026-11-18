@@ -72,17 +72,25 @@ public class OrdenCobroService {
     }
 
     @Transactional
-    public OrdenCobroRespuesta crear(CrearOrdenCobroSolicitud solicitud) {
+    public OrdenCobroRespuesta crear(CrearOrdenCobroSolicitud solicitud, UUID compradorSolicitanteId) {
         if (repository.existsByReservaId(solicitud.reservaId())) {
             throw new ConflictoNegocioException(
                     "La reserva ya tiene una orden de cobro"
             );
         }
 
-        ReservaParaCobro reserva = inventarioClient.consultarReserva(solicitud.reservaId())
+        ReservaParaCobro reserva = inventarioClient.consultarReserva(
+                        solicitud.reservaId(), compradorSolicitanteId
+                )
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe la reserva indicada"
                 ));
+
+        if (!compradorSolicitanteId.equals(reserva.compradorId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "La reserva no pertenece al comprador autenticado"
+            );
+        }
 
         if (!reserva.activa()
                 || reserva.venceEn() == null

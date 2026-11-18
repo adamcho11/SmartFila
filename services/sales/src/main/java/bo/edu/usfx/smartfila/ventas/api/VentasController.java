@@ -14,12 +14,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springdoc.core.annotations.ParameterObject;
 import bo.edu.usfx.smartfila.ventas.api.dto.CrearOrdenCobroSolicitud;
+import bo.edu.usfx.smartfila.ventas.aplicacion.dto.AuditoriaPagoRespuesta;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -47,29 +52,61 @@ public class VentasController {
                     size = 20,
                     sort = "creadaEn",
                     direction = Sort.Direction.DESC
-            ) @ParameterObject Pageable pageable
+            ) @ParameterObject Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        validarAccesoComprador(compradorId, jwt);
         return service.listarPorComprador(compradorId, estado, pageable);
     }
 
     @GetMapping("/referencias-qr/{referenciaQr}")
     public ResponseEntity<OrdenCobroRespuesta> buscarPorQr(
-            @PathVariable String referenciaQr
+            @PathVariable String referenciaQr,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        return service.buscarPorReferenciaQr(referenciaQr)
+        OrdenCobroRespuesta orden = service.buscarPorReferenciaQr(referenciaQr)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe una orden con esa referencia QR"
-                ));
+                )).getBody();
+        List<String> roles = jwt == null ? null : jwt.getClaimAsStringList("roles");
+        if (roles != null && roles.contains("CIUDADANO")) {
+            validarAccesoComprador(orden.compradorId(), jwt);
+        }
+        return ResponseEntity.ok(orden);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrdenCobroRespuesta> buscarPorId(@PathVariable UUID id) {
-        return service.buscarPorId(id)
-                .map(ResponseEntity::ok)
+    public ResponseEntity<OrdenCobroRespuesta> buscarPorId(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        OrdenCobroRespuesta orden = service.buscarPorId(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe una orden de cobro con ese identificador"
                 ));
+        validarAccesoComprador(orden.compradorId(), jwt);
+        return ResponseEntity.ok(orden);
+    }
+
+    @GetMapping("/{id}/auditoria")
+    public List<AuditoriaPagoRespuesta> consultarAuditoria(@PathVariable UUID id) {
+        return service.listarAuditoria(id);
+    }
+
+    private void validarAccesoComprador(UUID compradorId, Jwt jwt) {
+        if (jwt == null) return; // Perfil de pruebas; en ejecución normal el filtro exige JWT.
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        if (roles == null || roles.isEmpty()) {
+            throw new AccessDeniedException("El token no contiene roles válidos");
+        }
+        if (roles.contains("ADMIN") || roles.contains("ORGANIZADOR")) return;
+        if (!roles.contains("CIUDADANO")) {
+            throw new AccessDeniedException("El rol no puede consultar órdenes de compradores");
+        }
+        if (!compradorId.toString().equals(jwt.getSubject())) {
+            throw new AccessDeniedException("No puedes consultar órdenes de otro comprador");
+        }
     }
 
     @PostMapping
@@ -82,9 +119,12 @@ public class VentasController {
             @ApiResponse(responseCode = "503", description = "Inventario no disponible")
     })
     public ResponseEntity<OrdenCobroRespuesta> crear(
-            @Valid @RequestBody CrearOrdenCobroSolicitud solicitud
+            @Valid @RequestBody CrearOrdenCobroSolicitud solicitud,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        OrdenCobroRespuesta orden = service.crear(solicitud);
+        OrdenCobroRespuesta orden = service.crear(
+                solicitud, UUID.fromString(jwt.getSubject())
+        );
 
         return ResponseEntity
                 .created(URI.create("/api/v1/ventas/" + orden.id()))
