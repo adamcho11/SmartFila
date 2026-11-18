@@ -107,6 +107,19 @@ services:
       - inventory-data
     restart: unless-stopped
 
+  queue:
+    build:
+      context: .
+      dockerfile: services/queue/Dockerfile
+    image: smartfila/queue:dev
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "127.0.0.1:8083:8080"
+    networks:
+      - backend
+    restart: unless-stopped
+
 volumes:
   jwt-keys:
   identity-db-data:
