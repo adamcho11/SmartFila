@@ -3,13 +3,52 @@
 #   cp .env.example .env
 #   docker compose up -d --build
 #
-# Por ahora solo está Identidad. Cada servicio agrega aquí su contenedor, su base
-# y sus redes. NGINX será la única entrada; mientras no exista, Identidad publica
-# sus puertos solo en localhost para probarla desde el host.
+# Cada servicio agrega aquí su contenedor, base de datos y redes. NGINX será la
+# entrada compartida; mientras se integra, los servicios publican puertos solo
+# en localhost para pruebas desde el host.
 
 name: smartfila
 
 services:
+  sales-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: smartfila_sales
+      POSTGRES_USER: sales
+      POSTGRES_PASSWORD: ${SALES_DB_PASSWORD:?define SALES_DB_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - sales-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sales -d smartfila_sales"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - sales-data
+
+  sales:
+    build:
+      context: .
+      dockerfile: services/sales/Dockerfile
+    image: smartfila/sales:dev
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://sales-db:5432/smartfila_sales
+      SPRING_DATASOURCE_USERNAME: sales
+      SPRING_DATASOURCE_PASSWORD: ${SALES_DB_PASSWORD}
+      SPRING_PROFILES_ACTIVE: ${SALES_PROFILE:-demo}
+      SMARTFILA_INVENTORY_BASE_URL: http://inventory:8080
+    depends_on:
+      sales-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8084:8080"
+    networks:
+      - backend
+      - sales-data
+    restart: unless-stopped
+
   # Genera una sola vez el par de claves RS256 del JWT en el volumen jwt-keys.
   # jwt.key solo la lee Identidad (uid 10001); jwt.pub es para todos los servicios.
   keygen:
@@ -124,6 +163,7 @@ volumes:
   jwt-keys:
   identity-db-data:
   inventory-db-data:
+  sales-db-data:
 
 networks:
   # Red común de los servicios, el gateway y NGINX.
@@ -133,3 +173,4 @@ networks:
     internal: true
   inventory-data:
     internal: true
+  sales-data:
