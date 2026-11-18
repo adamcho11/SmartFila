@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Hidden
@@ -32,5 +33,18 @@ public class PagoSimuladoController {
             @Valid @RequestBody ConfirmarPagoSolicitud solicitud
     ) {
         return service.confirmarPago(id, solicitud);
+    }
+
+    @PostMapping("/{id}/republicar-evento")
+    public Map<String, Object> republicarEvento(@PathVariable UUID id) {
+        return service.republicarEventoConfirmacion(id);
+    }
+
+    @PostMapping("/eventos-fallo-simulado")
+    public Map<String, Object> publicarEventoFallo(
+            @RequestBody(required = false) Map<String, String> solicitud
+    ) {
+        String motivo = solicitud == null ? null : solicitud.get("motivo");
+        return service.publicarEventoFalloSimulado(motivo);
     }
 }

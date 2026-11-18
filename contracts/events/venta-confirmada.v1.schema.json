@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smartfila.usfx.edu.bo/contracts/events/venta-confirmada.v1.schema.json",
+  "title": "VentaConfirmadaEvent",
+  "description": "Evento de dominio publicado por Ventas al confirmar el pago de una orden.",
+  "type": "object",
+  "required": ["eventId", "eventType", "occurredAt", "correlationId", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identificador único del evento para deduplicación idempotente en consumidores."
+    },
+    "eventType": {
+      "type": "string",
+      "const": "venta.confirmada"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlationId": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "reservationId",
+        "userId",
+        "buyerCi",
+        "sector",
+        "unit",
+        "sku",
+        "amount",
+        "currency",
+        "paymentReference"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "reservationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "userId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "buyerCi": {
+          "type": "string"
+        },
+        "sector": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "sku": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "currency": {
+          "type": "string",
+          "const": "BOB"
+        },
+        "paymentReference": {
+          "type": "string"
+        },
+        "simulateFailure": {
+          "type": "boolean",
+          "description": "Bandera opcional de prueba para demostrar reintentos acotados y enrutamiento a DLQ."
+        }
+      }
+    }
+  }
+}

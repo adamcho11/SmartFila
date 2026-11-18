@@ -21,6 +21,15 @@ public sealed class Product
         SetDetails(name, sku, stock, unitPrice);
     }
 
+    public bool DecrementStock(int quantity = 1)
+    {
+        if (quantity <= 0 || Stock < quantity)
+            return false;
+
+        Stock -= quantity;
+        return true;
+    }
+
     private void SetDetails(string name, string sku, int stock, decimal unitPrice)
     {
         if (string.IsNullOrWhiteSpace(name))

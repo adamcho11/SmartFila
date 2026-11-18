@@ -19,6 +19,7 @@ builder.Services.AddDbContext<Queue.Infrastructure.QueueDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("QueueDatabase")));
 builder.Services.AddScoped<Queue.Application.ITurnoRepository, Queue.Infrastructure.TurnoRepository>();
 builder.Services.AddScoped<Queue.Application.TurnoService>();
+builder.Services.AddHostedService<Queue.Api.Messaging.VentaConfirmadaConsumer>();
 
 var app = builder.Build();
 
@@ -34,6 +35,14 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<Queue.Infrastructure.QueueDbContext>();
     await db.Database.EnsureCreatedAsync();
+    await db.Database.ExecuteSqlRawAsync("""
+        CREATE TABLE IF NOT EXISTS processed_messages (
+            "EventId" uuid PRIMARY KEY,
+            "EventType" character varying(100) NOT NULL,
+            "OrderId" character varying(100),
+            "ProcessedAt" timestamp with time zone NOT NULL
+        );
+        """);
 }
 app.UseAuthorization();
 app.MapControllers();
