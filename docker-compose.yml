@@ -1,0 +1,85 @@
+# SmartFila · sistema completo con un solo comando:
+#
+#   cp .env.example .env
+#   docker compose up -d --build
+#
+# Por ahora solo está Identidad. Cada servicio agrega aquí su contenedor, su base
+# y sus redes. NGINX será la única entrada; mientras no exista, Identidad publica
+# sus puertos solo en localhost para probarla desde el host.
+
+name: smartfila
+
+services:
+  # Genera una sola vez el par de claves RS256 del JWT en el volumen jwt-keys.
+  # jwt.key solo la lee Identidad (uid 10001); jwt.pub es para todos los servicios.
+  keygen:
+    image: alpine:3.20
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ ! -f /keys/jwt.key ]; then
+          apk add --no-cache openssl > /dev/null
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /keys/jwt.key
+          openssl pkey -in /keys/jwt.key -pubout -out /keys/jwt.pub
+          echo "claves JWT generadas"
+        fi
+        chown 10001 /keys/jwt.key
+        chmod 600 /keys/jwt.key
+        chmod 644 /keys/jwt.pub
+    volumes:
+      - jwt-keys:/keys
+    restart: "no"
+
+  identity-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: smartfila_identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:?define IDENTITY_DB_PASSWORD en .env}
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U identity -d smartfila_identity"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - identity-data
+
+  identity:
+    build:
+      context: .
+      dockerfile: services/identity/Dockerfile
+    image: smartfila/identity:dev
+    environment:
+      DATABASE_URL: postgres://identity:${IDENTITY_DB_PASSWORD}@identity-db:5432/smartfila_identity
+      JWT_PRIVATE_KEY_PATH: /keys/jwt.key
+      JWT_KID: identity-1
+      RUST_LOG: info,sqlx=warn
+    volumes:
+      - jwt-keys:/keys:ro
+    depends_on:
+      keygen:
+        condition: service_completed_successfully
+      identity-db:
+        condition: service_healthy
+    ports:
+      # Dentro de la red: identity:8080 (REST) e identity:50051 (gRPC).
+      - "127.0.0.1:8081:8080"
+      - "127.0.0.1:50052:50051"
+    networks:
+      - backend
+      - identity-data
+    restart: unless-stopped
+
+volumes:
+  jwt-keys:
+  identity-db-data:
+
+networks:
+  # Red común de los servicios, el gateway y NGINX.
+  backend:
+  # Solo Identidad llega a su base, y la base no sale a internet.
+  identity-data:
+    internal: true

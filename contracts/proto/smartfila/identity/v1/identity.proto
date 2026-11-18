@@ -1,0 +1,50 @@
+// Contrato gRPC de Identidad · versión 1.
+//
+// Servidor: Identidad (Rust, tonic) en identity:50051.
+// Cliente:  Gateway GraphQL (ASP.NET Core). Antes de cada mutación verifica que la
+//           sesión del token siga activa (RN-07, sesión única).
+//
+// Cada llamada debe llevar un deadline de 200 ms. Códigos de estado:
+//   OK                 la sesión está activa; la respuesta trae sus datos.
+//   INVALID_ARGUMENT   session_id vacío o que no es un UUID.
+//   NOT_FOUND          no existe una sesión con ese id.
+//   UNAUTHENTICATED    la sesión fue revocada (otro login o logout), venció o la
+//                      cuenta está deshabilitada. El mensaje es SESSION_REVOKED o
+//                      SESSION_EXPIRED; el gateway responde 401.
+//   UNAVAILABLE        Identidad no llega a su base de datos.
+//   DEADLINE_EXCEEDED  la llamada superó el deadline.
+//
+// Reglas de versionado: no se reutilizan números de campo; un cambio incompatible
+// crea el paquete smartfila.identity.v2.
+
+syntax = "proto3";
+
+package smartfila.identity.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "SmartFila.Contracts.Identity.V1";
+option java_package = "bo.usfx.smartfila.contracts.identity.v1";
+option java_multiple_files = true;
+
+service IdentityService {
+  // Comprueba que la sesión (claim sid del JWT) siga activa.
+  rpc ValidateSession(ValidateSessionRequest) returns (ValidateSessionResponse);
+}
+
+message ValidateSessionRequest {
+  // Claim sid del JWT (UUID).
+  string session_id = 1;
+}
+
+message ValidateSessionResponse {
+  string session_id = 1;
+  // Claim sub del JWT (UUID).
+  string user_id = 2;
+  // ADMIN, ORGANIZADOR, INSPECTOR o CIUDADANO.
+  repeated string roles = 3;
+  // Organizador del ORGANIZADOR o INSPECTOR; vacío para ADMIN y CIUDADANO.
+  string organizer_id = 4;
+  // Vencimiento de la sesión (12 h desde el login).
+  google.protobuf.Timestamp expires_at = 5;
+}

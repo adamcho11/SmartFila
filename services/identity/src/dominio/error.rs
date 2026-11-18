@@ -63,7 +63,7 @@ pub enum ErrorDominio {
 
 impl ErrorDominio {
     /// Código del catálogo común. Los que no están en el documento v2 son
-    /// propios de Identidad y deben agregarse a `contracts/openapi/identidad.v1.yaml`.
+    /// propios de Identidad y deben agregarse a `contracts/openapi/identity.v1.yaml`.
     pub fn codigo(&self) -> &'static str {
         match self {
             Self::Validacion(_) => "VALIDATION_ERROR",
