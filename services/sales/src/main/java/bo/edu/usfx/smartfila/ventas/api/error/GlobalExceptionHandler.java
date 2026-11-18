@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.List;
 import java.util.UUID;
@@ -104,6 +105,18 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 "BUSINESS_RULE_VIOLATION",
                 "La operación entra en conflicto con una orden ya registrada",
+                List.of()
+        );
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<CuerpoError> manejarActualizacionConcurrente(
+            ObjectOptimisticLockingFailureException exception
+    ) {
+        return error(
+                HttpStatus.CONFLICT,
+                "CONCURRENT_UPDATE",
+                "La orden cambió durante la operación; vuelve a consultar su estado",
                 List.of()
         );
     }

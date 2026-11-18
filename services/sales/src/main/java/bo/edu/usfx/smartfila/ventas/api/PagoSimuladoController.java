@@ -3,6 +3,7 @@ package bo.edu.usfx.smartfila.ventas.api;
 import bo.edu.usfx.smartfila.ventas.api.dto.ConfirmarPagoSolicitud;
 import bo.edu.usfx.smartfila.ventas.aplicacion.OrdenCobroService;
 import bo.edu.usfx.smartfila.ventas.aplicacion.dto.OrdenCobroRespuesta;
+import bo.edu.usfx.smartfila.ventas.aplicacion.dto.AuditoriaPagoRespuesta;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import org.springframework.context.annotation.Profile;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import java.util.List;
 
 import java.util.UUID;
 
@@ -32,5 +35,10 @@ public class PagoSimuladoController {
             @Valid @RequestBody ConfirmarPagoSolicitud solicitud
     ) {
         return service.confirmarPago(id, solicitud);
+    }
+
+    @GetMapping("/{id}/auditoria")
+    public List<AuditoriaPagoRespuesta> consultarAuditoria(@PathVariable UUID id) {
+        return service.listarAuditoria(id);
     }
 }
