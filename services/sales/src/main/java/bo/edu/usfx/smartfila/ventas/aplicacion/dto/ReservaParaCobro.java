@@ -10,6 +10,8 @@ public record ReservaParaCobro(
         @JsonProperty("buyerId") UUID compradorId,
         @JsonProperty("amount") BigDecimal monto,
         @JsonProperty("expiresAt") Instant venceEn,
-        @JsonProperty("active") boolean activa
+        @JsonProperty("active") boolean activa,
+        @JsonProperty("sector") String sector,
+        @JsonProperty("unit") String unidad
 ) {
 }

@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import bo.edu.usfx.smartfila.ventas.config.VentasMetrics;
 
 @Service
 @Transactional(readOnly = true)
@@ -30,15 +31,18 @@ public class OrdenCobroService {
     private final OrdenCobroRepository repository;
     private final InventarioClient inventarioClient;
     private final AuditoriaPagoRepository auditoriaRepository;
+    private final VentasMetrics metrics;
 
     public OrdenCobroService(
             OrdenCobroRepository repository,
             InventarioClient inventarioClient,
-            AuditoriaPagoRepository auditoriaRepository
+            AuditoriaPagoRepository auditoriaRepository,
+            VentasMetrics metrics
     ) {
         this.repository = repository;
         this.inventarioClient = inventarioClient;
         this.auditoriaRepository = auditoriaRepository;
+        this.metrics = metrics;
     }
 
     public Page<OrdenCobroRespuesta> listarPorComprador(
@@ -72,17 +76,37 @@ public class OrdenCobroService {
     }
 
     @Transactional
-    public OrdenCobroRespuesta crear(CrearOrdenCobroSolicitud solicitud) {
+    public OrdenCobroRespuesta crear(
+            CrearOrdenCobroSolicitud solicitud,
+            UUID compradorSolicitanteId,
+            String compradorNombre,
+            String compradorCi
+    ) {
         if (repository.existsByReservaId(solicitud.reservaId())) {
             throw new ConflictoNegocioException(
                     "La reserva ya tiene una orden de cobro"
             );
         }
 
-        ReservaParaCobro reserva = inventarioClient.consultarReserva(solicitud.reservaId())
+        ReservaParaCobro reserva = inventarioClient.consultarReserva(
+                        solicitud.reservaId(), compradorSolicitanteId
+                )
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe la reserva indicada"
                 ));
+
+        if (!compradorSolicitanteId.equals(reserva.compradorId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "La reserva no pertenece al comprador autenticado"
+            );
+        }
+
+        if (compradorNombre == null || compradorNombre.isBlank()
+                || compradorCi == null || compradorCi.isBlank()) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "El JWT no contiene los datos mínimos del comprador"
+            );
+        }
 
         if (!reserva.activa()
                 || reserva.venceEn() == null
@@ -102,10 +126,16 @@ public class OrdenCobroService {
                 reserva.reservaId(),
                 reserva.compradorId(),
                 reserva.monto(),
-                reserva.venceEn()
+                reserva.venceEn(),
+                compradorNombre,
+                compradorCi,
+                reserva.sector(),
+                reserva.unidad()
         );
 
-        return OrdenCobroRespuesta.desde(repository.save(orden));
+        OrdenCobroRespuesta respuesta = OrdenCobroRespuesta.desde(repository.save(orden));
+        metrics.ordenCreada();
+        return respuesta;
     }
 
     @Transactional(noRollbackFor = ConflictoNegocioException.class)
@@ -140,7 +170,30 @@ public class OrdenCobroService {
             auditoriaRepository.save(new AuditoriaPago(
                     ordenId, "PAGO_CONFIRMADO", solicitud.referenciaPago(), solicitud.monto()
             ));
+            metrics.pagoConfirmado();
         }
         return OrdenCobroRespuesta.desde(guardada);
+    }
+
+    @Transactional
+    public OrdenCobroRespuesta anular(UUID ordenId) {
+        OrdenCobro orden = repository.findById(ordenId)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No existe la orden de cobro indicada"
+                ));
+        try {
+            if (orden.anular(Instant.now())) {
+                repository.save(orden);
+                auditoriaRepository.save(new AuditoriaPago(
+                        ordenId,
+                        "VENTA_ANULADA",
+                        orden.getReferenciaPago(),
+                        orden.getMonto()
+                ));
+            }
+        } catch (IllegalStateException exception) {
+            throw new ConflictoNegocioException(exception.getMessage());
+        }
+        return OrdenCobroRespuesta.desde(orden);
     }
 }

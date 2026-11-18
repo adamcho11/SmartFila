@@ -10,25 +10,29 @@ import java.util.UUID;
 public record OrdenCobroRespuesta(
         UUID id,
         UUID reservaId,
+        UUID compradorId,
         BigDecimal monto,
         EstadoOrdenCobro estado,
         String referenciaQr,
         String contenidoQr,
         Instant creadaEn,
         Instant venceEn,
-        Instant confirmadaEn
+        Instant confirmadaEn,
+        Instant anuladaEn
 ) {
     public static OrdenCobroRespuesta desde(OrdenCobro orden) {
         return new OrdenCobroRespuesta(
                 orden.getId(),
                 orden.getReservaId(),
+                orden.getCompradorId(),
                 orden.getMonto(),
                 orden.getEstado(),
                 orden.getReferenciaQr(),
                 orden.getContenidoQr(),
                 orden.getCreadaEn(),
                 orden.getVenceEn(),
-                orden.getConfirmadaEn()
+                orden.getConfirmadaEn(),
+                orden.getAnuladaEn()
         );
     }
 }

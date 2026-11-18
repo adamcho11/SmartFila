@@ -17,6 +17,7 @@ public class OrdenCobro {
     private UUID id;
 
     @Version
+    @Column(columnDefinition = "bigint default 0 not null")
     private long version;
 
     @Column(name = "reserva_id", nullable = false)
@@ -24,6 +25,18 @@ public class OrdenCobro {
 
     @Column(name = "comprador_id", nullable = false)
     private UUID compradorId;
+
+    @Column(name = "comprador_nombre", length = 160)
+    private String compradorNombre;
+
+    @Column(name = "comprador_ci", length = 20)
+    private String compradorCi;
+
+    @Column(name = "sector_nombre", length = 100)
+    private String sector;
+
+    @Column(name = "unidad_etiqueta", length = 100)
+    private String unidad;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
@@ -44,6 +57,9 @@ public class OrdenCobro {
     @Column(name = "confirmada_en")
     private Instant confirmadaEn;
 
+    @Column(name = "anulada_en")
+    private Instant anuladaEn;
+
     @Column(name = "referencia_pago", unique = true, length = 100)
     private String referenciaPago;
 
@@ -59,10 +75,27 @@ public class OrdenCobro {
             BigDecimal monto,
             Instant venceEn
     ) {
+        this(reservaId, compradorId, monto, venceEn, null, null, null, null);
+    }
+
+    public OrdenCobro(
+            UUID reservaId,
+            UUID compradorId,
+            BigDecimal monto,
+            Instant venceEn,
+            String compradorNombre,
+            String compradorCi,
+            String sector,
+            String unidad
+    ) {
         this.reservaId = reservaId;
         this.compradorId = compradorId;
         this.monto = monto;
         this.venceEn = venceEn;
+        this.compradorNombre = compradorNombre;
+        this.compradorCi = compradorCi;
+        this.sector = sector;
+        this.unidad = unidad;
         this.contenidoQr = "SMARTFILA|COBRO|v1|"
                 + this.referenciaQr + "|BOB|"
                 + monto.stripTrailingZeros().toPlainString() + "|"
@@ -85,6 +118,11 @@ public class OrdenCobro {
     public UUID getCompradorId() {
         return compradorId;
     }
+
+    public String getCompradorNombre() { return compradorNombre; }
+    public String getCompradorCi() { return compradorCi; }
+    public String getSector() { return sector; }
+    public String getUnidad() { return unidad; }
 
     public BigDecimal getMonto() {
         return monto;
@@ -143,6 +181,18 @@ public class OrdenCobro {
 
     public Instant getConfirmadaEn() {
         return confirmadaEn;
+    }
+
+    public Instant getAnuladaEn() { return anuladaEn; }
+
+    public boolean anular(Instant ahora) {
+        if (estado == EstadoOrdenCobro.ANULADO) return false;
+        if (estado != EstadoOrdenCobro.CONFIRMADO) {
+            throw new IllegalStateException("Solo se puede anular una venta confirmada");
+        }
+        estado = EstadoOrdenCobro.ANULADO;
+        anuladaEn = ahora;
+        return true;
     }
 
     public boolean expirarSiVencida(Instant ahora) {

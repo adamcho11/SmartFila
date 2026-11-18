@@ -18,6 +18,11 @@ public interface OrdenCobroRepository extends JpaRepository<OrdenCobro, UUID> {
 
     Optional<OrdenCobro> findByReferenciaPago(String referenciaPago);
 
+    java.util.List<OrdenCobro> findByCompradorCiAndEstadoOrderByCreadaEnDesc(
+            String compradorCi,
+            EstadoOrdenCobro estado
+    );
+
     Page<OrdenCobro> findByCompradorIdAndEstado(
             UUID compradorId,
             EstadoOrdenCobro estado,

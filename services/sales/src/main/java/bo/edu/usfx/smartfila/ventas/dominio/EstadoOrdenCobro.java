@@ -4,5 +4,6 @@ public enum EstadoOrdenCobro {
     PENDIENTE,
     CONFIRMADO,
     RECHAZADO,
-    EXPIRADO
+    EXPIRADO,
+    ANULADO
 }
