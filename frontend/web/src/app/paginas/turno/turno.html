@@ -1,0 +1,241 @@
+<div class="encabezado">
+  <div>
+    <p class="encabezado__antetitulo">Fila virtual</p>
+    <h1>Mi turno</h1>
+    <p class="ayuda">
+      La fila es por orden de llegada. Tu posición se consulta cada {{ intervaloSegundos }} s
+      directamente a la Cola.
+    </p>
+  </div>
+</div>
+
+@if (errorConsulta(); as e) {
+  <p class="alerta" role="alert">No se pudo consultar la Cola: {{ e }}</p>
+}
+
+@if (turnos() === null && !errorConsulta()) {
+  <div class="tarjeta esqueleto esqueleto--alto"></div>
+} @else if (miTurno(); as t) {
+  <section class="boleto" [class.boleto--admitido]="t.estado === 'ADMITIDO'">
+    <div class="boleto__talon">
+      <span class="boleto__etiqueta">Turno</span>
+      <span class="boleto__numero">#{{ numero() ?? '…' }}</span>
+      <span class="estado estado--{{ t.estado }}">
+        {{ t.estado === 'ADMITIDO' ? 'Admitido' : 'En espera' }}
+      </span>
+    </div>
+
+    <div class="boleto__cuerpo">
+      @if (t.estado === 'ADMITIDO') {
+        <h2 class="boleto__titulo">¡Es tu turno!</h2>
+        <p class="boleto__texto">Ya puedes elegir tu unidad. Mantén esta página abierta.</p>
+      } @else if (delante() === 0) {
+        <h2 class="boleto__titulo">Eres el siguiente</h2>
+        <p class="boleto__texto">No hay nadie delante de ti. Espera a que la Cola te admita.</p>
+      } @else {
+        <h2 class="boleto__titulo">
+          <span class="cifra">{{ delante() }}</span>
+          {{ delante() === 1 ? 'persona delante' : 'personas delante' }}
+        </h2>
+        <p class="boleto__texto">
+          {{ enEspera() }} {{ enEspera() === 1 ? 'persona espera' : 'personas esperan' }} para este
+          evento.
+        </p>
+      }
+
+      <div class="fila-visual" aria-hidden="true">
+        <span class="fila-visual__puerta"><app-icono nombre="ticket" /></span>
+        @if (filaVisual().resto > 0) {
+          <span class="fila-visual__mas">+{{ filaVisual().resto }}</span>
+        }
+        @for (p of filaVisual().personas; track p) {
+          <app-icono nombre="persona" class="fila-visual__persona" [style.--i]="p" />
+        }
+        <span class="fila-visual__yo"><app-icono nombre="persona" /> Tú</span>
+      </div>
+
+      <div
+        class="progreso"
+        role="progressbar"
+        aria-label="Avance en la fila"
+        [attr.aria-valuenow]="avance()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <div class="progreso__barra" [style.width.%]="avance()"></div>
+      </div>
+
+      <dl class="datos">
+        @if (eventoDelTurno(); as ev) {
+          <dt>Evento</dt>
+          <dd>{{ ev.nombre }}</dd>
+        }
+        <dt>{{ eventoDelTurno()?.unidad === 'asiento' ? 'Asiento' : 'Puesto' }}</dt>
+        <dd>
+          @if (puestoDelTurno(); as p) {
+            <strong>{{ tituloUnidad(p.name) }}</strong>
+            @if (eventoDelTurno(); as ev) {
+              @if (tramoDe(ev, p.sku); as tr) {
+                <span class="datos__sub">{{ tr.calle }} · {{ tr.desde }} → {{ tr.hasta }}</span>
+              }
+            }
+          } @else {
+            <code>{{ t.puestoId }}</code>
+          }
+        </dd>
+        @if (puestoDelTurno(); as p) {
+          <dt>Precio</dt>
+          <dd class="precio">{{ p.unitPrice | currency: 'BOB' : 'symbol-narrow' }}</dd>
+        }
+      </dl>
+
+      @if (errorAccion(); as e) {
+        <p class="alerta" role="alert">{{ e }}</p>
+      }
+
+      <div class="boleto__pie">
+        <span class="proxima">
+          @for (marca of [ultimaConsulta()?.getTime()]; track marca) {
+            <svg class="anillo" viewBox="0 0 20 20" [style.--duracion]="intervaloSegundos + 's'">
+              <circle class="anillo__pista" cx="10" cy="10" r="8" />
+              <circle class="anillo__avance" cx="10" cy="10" r="8" />
+            </svg>
+          }
+          @if (ultimaConsulta(); as hora) {
+            Consultado a las {{ hora | date: 'HH:mm:ss' }}
+          }
+        </span>
+        <button
+          type="button"
+          class="boton boton--peligro"
+          (click)="confirmarSalida.set(true)"
+          [disabled]="enviando()"
+        >
+          <app-icono nombre="salir" /> Salir de la fila
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <app-dialogo
+    [(abierto)]="confirmarSalida"
+    titulo="¿Salir de la fila?"
+    icono="salir"
+    tono="peligro"
+    textoConfirmar="Sí, salir"
+    textoCancelar="Seguir en la fila"
+    (confirmar)="salirDeLaFila()"
+  >
+    Perderás el turno <strong>#{{ numero() ?? '…' }}</strong
+    >. Si vuelves a entrar, quedarás al final de la fila.
+  </app-dialogo>
+} @else {
+  <section class="tarjeta tarjeta--pedir">
+    <div class="tarjeta__cabecera">
+      <div>
+        <h2>Elige evento y puesto</h2>
+        <p class="ayuda">Cada evento tiene su propia fila. Solo puedes tener un turno activo.</p>
+      </div>
+    </div>
+
+    @if (errorPuestos(); as e) {
+      <p class="alerta" role="alert">No se pudieron cargar los puestos: {{ e }}</p>
+    } @else if (cargandoPuestos()) {
+      <div class="opciones-puesto">
+        @for (i of [0, 1, 2]; track i) {
+          <div class="opcion-puesto esqueleto"></div>
+        }
+      </div>
+    } @else if (eventos().length === 0) {
+      <p class="vacio">Inventario no tiene puestos a la venta todavía.</p>
+    } @else {
+      <p class="paso">1. Evento</p>
+      <div class="eventos" role="radiogroup" aria-label="Evento">
+        @for (g of eventos(); track g.evento.clave; let i = $index) {
+          <label
+            class="evento-opcion"
+            [class.elegida]="g.evento.clave === eventoElegido()"
+            [style.--i]="i"
+          >
+            <input
+              type="radio"
+              name="evento"
+              class="oculto"
+              [value]="g.evento.clave"
+              [checked]="g.evento.clave === eventoElegido()"
+              (change)="elegirEvento(g.evento.clave)"
+            />
+            <span class="evento-opcion__nombre">{{ g.evento.nombre }}</span>
+            <span class="evento-opcion__detalle">
+              @if (g.evento.unidad === 'tramo') {
+                Tramos de acera{{ g.evento.ciudad ? ' · ' + g.evento.ciudad : '' }}
+              } @else {
+                Asientos numerados
+              }
+            </span>
+          </label>
+        }
+      </div>
+
+      @if (grupoElegido(); as g) {
+        <p class="paso">
+          2. {{ g.evento.unidad === 'asiento' ? 'Sector' : 'Tramo' }}
+          <span>
+            · {{ enEspera() }} {{ enEspera() === 1 ? 'persona' : 'personas' }} en la fila de este
+            evento
+          </span>
+        </p>
+        <div
+          class="opciones-puesto"
+          role="radiogroup"
+          [attr.aria-label]="g.evento.unidad === 'asiento' ? 'Sector' : 'Tramo'"
+        >
+          @for (p of g.elementos; track p.id; let i = $index) {
+            <label class="opcion-puesto" [class.elegida]="p.id === puestoElegido()" [style.--i]="i">
+              <input
+                type="radio"
+                name="puesto"
+                class="oculto"
+                [value]="p.id"
+                [checked]="p.id === puestoElegido()"
+                (change)="puestoElegido.set(p.id)"
+              />
+              <span class="opcion-puesto__check"><app-icono nombre="check" /></span>
+              <span class="opcion-puesto__titulo">{{ tituloUnidad(p.name) }}</span>
+              @if (tramoDe(g.evento, p.sku); as tr) {
+                <span class="opcion-puesto__evento"
+                  >{{ tr.calle }} · {{ tr.desde }} → {{ tr.hasta }}</span
+                >
+              } @else if (g.evento.unidad === 'asiento') {
+                <span class="opcion-puesto__evento">Asiento numerado</span>
+              }
+              <span class="opcion-puesto__pie">
+                <span class="precio">{{ p.unitPrice | currency: 'BOB' : 'symbol-narrow' }}</span>
+                <span class="opcion-puesto__stock"
+                  >{{ p.stock | number }} {{ etiquetaDisponible(g.evento, p.stock) }}</span
+                >
+              </span>
+            </label>
+          }
+        </div>
+      }
+
+      @if (errorAccion(); as e) {
+        <p class="alerta" role="alert">{{ e }}</p>
+      }
+
+      <button
+        type="button"
+        class="boton boton--primario boton--grande"
+        (click)="pedirTurno()"
+        [disabled]="enviando() || !puestoElegido()"
+      >
+        @if (enviando()) {
+          <span class="girando" aria-hidden="true"></span> Pidiendo turno…
+        } @else {
+          Entrar a la fila <app-icono nombre="flecha" />
+        }
+      </button>
+    }
+  </section>
+}

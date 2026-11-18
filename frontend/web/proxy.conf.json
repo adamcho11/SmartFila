@@ -1,0 +1,9 @@
+{
+  "/graphql": { "target": "http://127.0.0.1:8085", "secure": false },
+  "/api/v1/users": { "target": "http://127.0.0.1:8081", "secure": false },
+  "/api/v1/sessions": { "target": "http://127.0.0.1:8081", "secure": false },
+  "/.well-known": { "target": "http://127.0.0.1:8081", "secure": false },
+  "/api/v1/products": { "target": "http://127.0.0.1:8082", "secure": false },
+  "/api/v1/turnos": { "target": "http://127.0.0.1:8083", "secure": false },
+  "/api/v1/ventas": { "target": "http://127.0.0.1:8084", "secure": false }
+}

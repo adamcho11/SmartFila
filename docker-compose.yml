@@ -202,12 +202,25 @@ services:
       - backend
     restart: unless-stopped
 
+  # Angular compilado y servido por NGINX sin root. No publica puertos:
+  # se entra por el servicio nginx.
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/web/Dockerfile
+    image: smartfila/web:dev
+    networks:
+      - backend
+    restart: unless-stopped
+
   nginx:
     build:
       context: ./infrastructure/nginx
       dockerfile: Dockerfile
     image: smartfila/nginx:dev
     depends_on:
+      frontend:
+        condition: service_healthy
       gateway:
         condition: service_healthy
       identity:
@@ -219,7 +232,7 @@ services:
       sales:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8080:80"
+      - "127.0.0.1:${SMARTFILA_HTTP_PORT:-8080}:80"
       - "127.0.0.1:8443:443"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/health || exit 1"]
