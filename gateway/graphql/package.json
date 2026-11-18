@@ -1,0 +1,15 @@
+{
+  "name": "smartfila-graphql-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "graphql": "^16.11.0",
+    "graphql-yoga": "^5.15.1"
+  }
+}
