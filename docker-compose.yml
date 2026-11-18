@@ -73,13 +73,50 @@ services:
       - identity-data
     restart: unless-stopped
 
+  inventory-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: smartfila_inventory
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:?define INVENTORY_DB_PASSWORD en .env}
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory -d smartfila_inventory"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - inventory-data
+
+  inventory:
+    build:
+      context: .
+      dockerfile: services/inventory/Dockerfile
+    image: smartfila/inventory:dev
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__InventoryDatabase: Host=inventory-db;Port=5432;Database=smartfila_inventory;Username=inventory;Password=${INVENTORY_DB_PASSWORD}
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8082:8080"
+    networks:
+      - backend
+      - inventory-data
+    restart: unless-stopped
+
 volumes:
   jwt-keys:
   identity-db-data:
+  inventory-db-data:
 
 networks:
   # Red común de los servicios, el gateway y NGINX.
   backend:
   # Solo Identidad llega a su base, y la base no sale a internet.
   identity-data:
+    internal: true
+  inventory-data:
     internal: true
