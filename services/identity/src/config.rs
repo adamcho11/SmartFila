@@ -22,7 +22,7 @@ impl Config {
             puerto_grpc: puerto("GRPC_PORT", 50051)?,
             database_url: std::env::var("DATABASE_URL").context("falta DATABASE_URL")?,
             ruta_clave_privada: var_o("JWT_PRIVATE_KEY_PATH", "/keys/jwt.key"),
-            kid: var_o("JWT_KID", "identidad-1"),
+            kid: var_o("JWT_KID", "identity-1"),
         })
     }
 

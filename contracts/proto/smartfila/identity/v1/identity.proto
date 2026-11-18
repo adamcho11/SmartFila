@@ -1,6 +1,6 @@
 // Contrato gRPC de Identidad · versión 1.
 //
-// Servidor: Identidad (Rust, tonic) en identidad:50051.
+// Servidor: Identidad (Rust, tonic) en identity:50051.
 // Cliente:  Gateway GraphQL (ASP.NET Core). Antes de cada mutación verifica que la
 //           sesión del token siga activa (RN-07, sesión única).
 //

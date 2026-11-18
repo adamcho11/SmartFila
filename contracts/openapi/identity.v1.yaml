@@ -220,7 +220,7 @@ components:
           example: AQAB
         kid:
           type: string
-          example: identidad-1
+          example: identity-1
         kty:
           type: string
           example: RSA

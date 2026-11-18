@@ -4,7 +4,7 @@
 //! Necesita una base vacía o desechable; borra todos los datos de Identidad:
 //!
 //! ```bash
-//! IDENTIDAD_TEST_DATABASE_URL=postgres://... cargo test -- --include-ignored
+//! IDENTITY_TEST_DATABASE_URL=postgres://... cargo test -- --include-ignored
 //! ```
 //!
 //! El README del servicio tiene los comandos para levantar la base con Docker.
@@ -20,16 +20,16 @@ use sqlx::PgPool;
 use tonic::Code;
 use tower::ServiceExt;
 
-use identidad::aplicacion::Servicio;
-use identidad::dominio::token::Claims;
-use identidad::grpc::pb::identity_service_server::IdentityService;
-use identidad::grpc::pb::ValidateSessionRequest;
-use identidad::grpc::IdentidadGrpc;
-use identidad::infra::claves::Claves;
+use identity::aplicacion::Servicio;
+use identity::dominio::token::Claims;
+use identity::grpc::pb::identity_service_server::IdentityService;
+use identity::grpc::pb::ValidateSessionRequest;
+use identity::grpc::IdentidadGrpc;
+use identity::infra::claves::Claves;
 
 async fn preparar() -> (Router, IdentidadGrpc) {
-    let url = std::env::var("IDENTIDAD_TEST_DATABASE_URL")
-        .expect("define IDENTIDAD_TEST_DATABASE_URL con una base desechable");
+    let url = std::env::var("IDENTITY_TEST_DATABASE_URL")
+        .expect("define IDENTITY_TEST_DATABASE_URL con una base desechable");
     let pool = PgPool::connect(&url).await.expect("conectar a PostgreSQL");
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
     sqlx::query("TRUNCATE users, organizers, processed_messages CASCADE")
@@ -41,7 +41,7 @@ async fn preparar() -> (Router, IdentidadGrpc) {
     let pem = clave.to_pkcs8_pem(LineEnding::LF).unwrap();
     let servicio = Servicio::new(pool, Claves::desde_pem(&pem, "prueba").unwrap());
     (
-        identidad::api::router(servicio.clone()),
+        identity::api::router(servicio.clone()),
         IdentidadGrpc::new(servicio),
     )
 }
@@ -102,7 +102,7 @@ fn login_ana(password: &str) -> Value {
 }
 
 #[tokio::test]
-#[ignore = "necesita PostgreSQL: IDENTIDAD_TEST_DATABASE_URL"]
+#[ignore = "necesita PostgreSQL: IDENTITY_TEST_DATABASE_URL"]
 async fn flujo_completo_de_sesion_unica() {
     let (app, grpc) = preparar().await;
 

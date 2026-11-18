@@ -38,7 +38,7 @@ tests/           integración con PostgreSQL y verificación del contrato OpenAP
 Contratos compartidos en la raíz del repo:
 
 - gRPC: `contracts/proto/smartfila/identity/v1/identity.proto`
-- REST: `contracts/openapi/identidad.v1.yaml` (se genera desde el código)
+- REST: `contracts/openapi/identity.v1.yaml` (se genera desde el código)
 
 ## Levantar con Docker Compose
 
@@ -101,7 +101,7 @@ grpcurl -plaintext -max-time 0.2 -d '{"session_id":"<sessionId del login>"}' \
 
 # desde la red de Docker, como lo hace el gateway
 docker run --rm --network smartfila_backend fullstorydev/grpcurl:v1.9.1 \
-  -plaintext -max-time 0.2 identidad:50051 list
+  -plaintext -max-time 0.2 identity:50051 list
 ```
 
 En C#, el gateway genera el cliente desde el mismo `.proto` (`<Protobuf Include="../../contracts/proto/smartfila/identity/v1/identity.proto" GrpcServices="Client" />`).
@@ -112,8 +112,8 @@ Sin Rust instalado, con Docker y **desde la raíz del repositorio** (el build ne
 
 ```bash
 alias cargo-docker='docker run --rm -u "$(id -u):$(id -g)" \
-  -e CARGO_HOME=/repo/services/identidad/target/.cargo \
-  -v "$PWD":/repo -w /repo/services/identidad rust:1.90-slim cargo'
+  -e CARGO_HOME=/repo/services/identity/target/.cargo \
+  -v "$PWD":/repo -w /repo/services/identity rust:1.90-slim cargo'
 
 cargo-docker test        # unitarias + contrato OpenAPI
 ```
@@ -121,17 +121,17 @@ cargo-docker test        # unitarias + contrato OpenAPI
 La prueba de integración (`tests/flujo_sesion.rs`) usa un PostgreSQL desechable:
 
 ```bash
-docker network create identidad-test
-docker run -d --rm --name identidad-test-db --network identidad-test \
+docker network create identity-test
+docker run -d --rm --name identity-test-db --network identity-test \
   -e POSTGRES_PASSWORD=test postgres:16-alpine
 
-docker run --rm -u "$(id -u):$(id -g)" --network identidad-test \
-  -e CARGO_HOME=/repo/services/identidad/target/.cargo \
-  -e IDENTIDAD_TEST_DATABASE_URL=postgres://postgres:test@identidad-test-db/postgres \
-  -v "$PWD":/repo -w /repo/services/identidad rust:1.90-slim \
+docker run --rm -u "$(id -u):$(id -g)" --network identity-test \
+  -e CARGO_HOME=/repo/services/identity/target/.cargo \
+  -e IDENTITY_TEST_DATABASE_URL=postgres://postgres:test@identity-test-db/postgres \
+  -v "$PWD":/repo -w /repo/services/identity rust:1.90-slim \
   cargo test -- --include-ignored
 
-docker rm -f identidad-test-db && docker network rm identidad-test
+docker rm -f identity-test-db && docker network rm identity-test
 ```
 
 Con Rust instalado: `cargo test`. Antes de un PR: `cargo fmt --check` y `cargo clippy --all-targets -- -D warnings`.
@@ -139,15 +139,15 @@ Con Rust instalado: `cargo test`. Antes de un PR: `cargo fmt --check` y `cargo c
 Si cambias la API REST, regenera el contrato (la prueba `contrato_openapi` falla si queda desactualizado):
 
 ```bash
-cargo run --bin openapi > ../../contracts/openapi/identidad.v1.yaml
+cargo run --bin openapi > ../../contracts/openapi/identity.v1.yaml
 ```
 
 ## Variables de entorno
 
 | Variable | Por defecto | Uso |
 |---|---|---|
-| `DATABASE_URL` | (obligatoria) | `postgres://identidad:<clave>@identidad-db:5432/identidad` |
+| `DATABASE_URL` | (obligatoria) | `postgres://identity:<clave>@identity-db:5432/smartfila_identity` |
 | `JWT_PRIVATE_KEY_PATH` | `/keys/jwt.key` | Clave privada RSA en PEM (PKCS#8 o PKCS#1) |
-| `JWT_KID` | `identidad-1` | `kid` del JWT y del JWKS |
+| `JWT_KID` | `identity-1` | `kid` del JWT y del JWKS |
 | `HTTP_PORT` / `GRPC_PORT` | `8080` / `50051` | Puertos |
 | `RUST_LOG` | `info,sqlx=warn` | Nivel de logs |

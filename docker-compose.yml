@@ -31,55 +31,55 @@ services:
       - jwt-keys:/keys
     restart: "no"
 
-  identidad-db:
+  identity-db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: identidad
-      POSTGRES_USER: identidad
-      POSTGRES_PASSWORD: ${IDENTIDAD_DB_PASSWORD:?define IDENTIDAD_DB_PASSWORD en .env}
+      POSTGRES_DB: smartfila_identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:?define IDENTITY_DB_PASSWORD en .env}
     volumes:
-      - identidad-db-data:/var/lib/postgresql/data
+      - identity-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U identidad -d identidad"]
+      test: ["CMD-SHELL", "pg_isready -U identity -d smartfila_identity"]
       interval: 5s
       timeout: 3s
       retries: 10
     networks:
-      - identidad-datos
+      - identity-data
 
-  identidad:
+  identity:
     build:
       context: .
-      dockerfile: services/identidad/Dockerfile
-    image: smartfila/identidad:dev
+      dockerfile: services/identity/Dockerfile
+    image: smartfila/identity:dev
     environment:
-      DATABASE_URL: postgres://identidad:${IDENTIDAD_DB_PASSWORD}@identidad-db:5432/identidad
+      DATABASE_URL: postgres://identity:${IDENTITY_DB_PASSWORD}@identity-db:5432/smartfila_identity
       JWT_PRIVATE_KEY_PATH: /keys/jwt.key
-      JWT_KID: identidad-1
+      JWT_KID: identity-1
       RUST_LOG: info,sqlx=warn
     volumes:
       - jwt-keys:/keys:ro
     depends_on:
       keygen:
         condition: service_completed_successfully
-      identidad-db:
+      identity-db:
         condition: service_healthy
     ports:
-      # Dentro de la red: identidad:8080 (REST) e identidad:50051 (gRPC).
+      # Dentro de la red: identity:8080 (REST) e identity:50051 (gRPC).
       - "127.0.0.1:8081:8080"
       - "127.0.0.1:50052:50051"
     networks:
       - backend
-      - identidad-datos
+      - identity-data
     restart: unless-stopped
 
 volumes:
   jwt-keys:
-  identidad-db-data:
+  identity-db-data:
 
 networks:
   # Red común de los servicios, el gateway y NGINX.
   backend:
   # Solo Identidad llega a su base, y la base no sale a internet.
-  identidad-datos:
+  identity-data:
     internal: true

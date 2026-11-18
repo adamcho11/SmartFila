@@ -1,7 +1,7 @@
 //! Arranque de Identidad: lee la configuración, conecta a PostgreSQL, aplica las
 //! migraciones y levanta REST (axum) y gRPC (tonic) en paralelo.
 //!
-//! `identidad healthcheck` hace un GET a `/health` y termina con código 0 o 1. Lo usa
+//! `identity healthcheck` hace un GET a `/health` y termina con código 0 o 1. Lo usa
 //! el HEALTHCHECK del Dockerfile, porque la imagen final no trae curl.
 
 use std::sync::LazyLock;
@@ -12,10 +12,10 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 
-use identidad::aplicacion::Servicio;
-use identidad::config::Config;
-use identidad::grpc::{pb, IdentidadGrpc};
-use identidad::infra::{claves::Claves, contrasenas};
+use identity::aplicacion::Servicio;
+use identity::config::Config;
+use identity::grpc::{pb, IdentidadGrpc};
+use identity::infra::{claves::Claves, contrasenas};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
         "Identidad escuchando"
     );
 
-    let http = axum::serve(oyente_http, identidad::api::router(servicio.clone()))
+    let http = axum::serve(oyente_http, identity::api::router(servicio.clone()))
         .with_graceful_shutdown(senal_de_apagado());
     let grpc = tonic::transport::Server::builder()
         .add_service(IdentidadGrpc::servidor(servicio))

@@ -32,7 +32,7 @@ pub struct Jwk {
     #[serde(rename = "use")]
     #[schema(example = "sig")]
     pub uso: String,
-    #[schema(example = "identidad-1")]
+    #[schema(example = "identity-1")]
     pub kid: String,
     /// Módulo en base64url.
     pub n: String,

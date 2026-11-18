@@ -19,6 +19,8 @@ target/
 # C# / .NET (Cola, Inventario, Gateway)
 bin/
 obj/
+# ...pero en Rust src/bin/ es código fuente (binarios extra de Cargo), no salida.
+!services/*/src/bin/
 *.user
 *.suo
 .vs/

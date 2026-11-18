@@ -1,9 +1,9 @@
 [package]
-name = "identidad"
+name = "identity"
 version = "0.2.0"
 edition = "2021"
 description = "SmartFila · microservicio de Identidad (cuentas, sesión única, roles, JWT y sanciones)"
-default-run = "identidad"
+default-run = "identity"
 
 [dependencies]
 # Dominio
