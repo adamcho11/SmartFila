@@ -207,6 +207,8 @@ services:
     environment:
       PORT: 8085
       IDENTITY_BASE_URL: http://identity:8080
+      IDENTITY_GRPC_TARGET: identity:50051
+      GRPC_DEADLINE_MS: ${GRPC_DEADLINE_MS:-200}
       INVENTORY_BASE_URL: http://inventory:8080
       QUEUE_BASE_URL: http://queue:8080
     depends_on:

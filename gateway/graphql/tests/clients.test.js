@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { fetchIdentity, fetchInventory, fetchQueue } from "../src/clients.js";
 import { createGatewaySchema } from "../src/schema.js";
+import { normalizeDeadline, grpcStatusName } from "../src/grpc-client.js";
 
 test("combines data shapes from all three upstreams", async (t) => {
   const originalFetch = globalThis.fetch;
@@ -76,4 +77,10 @@ test("GraphQL overview combines all upstream resolvers", async (t) => {
   assert.equal(result.data.overview.identity.signingKey, "identity-1");
   assert.equal(result.data.overview.inventory[0].sku, "E-1");
   assert.equal(result.data.overview.queue[0].estado, "EN_ESPERA");
+});
+
+test("gRPC deadline must be positive", () => {
+  assert.equal(normalizeDeadline("200"), 200);
+  assert.throws(() => normalizeDeadline("0"), /positive number/);
+  assert.throws(() => normalizeDeadline("-1"), /positive number/);
 });
