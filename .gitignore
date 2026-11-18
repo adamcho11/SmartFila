@@ -1,0 +1,58 @@
+# ── SmartFila · monorepo ────────────────────────────────────────────
+# Cada servicio puede tener su propio .gitignore; este cubre lo común.
+
+# Secretos y configuración local (nunca al repo)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+keys/
+
+# Rust (Identidad)
+target/
+**/*.rs.bk
+
+# C# / .NET (Cola, Inventario, Gateway)
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Java (Ventas)
+.gradle/
+build/
+.mvn/wrapper/maven-wrapper.jar
+*.class
+hs_err_pid*
+
+# Angular / Node (frontend)
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+yarn-error.log*
+
+# Datos locales de contenedores (solo en la raíz: no tocar Data/ de EF Core)
+/data/
+/volumes/
+
+# Pruebas de carga (resultados)
+*.jtl
+jmeter.log
+
+# Logs
+*.log
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
