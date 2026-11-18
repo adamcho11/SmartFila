@@ -2,6 +2,7 @@ package bo.edu.usfx.smartfila.ventas.api;
 
 import bo.edu.usfx.smartfila.ventas.api.error.RecursoNoEncontradoException;
 import bo.edu.usfx.smartfila.ventas.aplicacion.OrdenCobroService;
+import bo.edu.usfx.smartfila.ventas.aplicacion.ComprobantePdfService;
 import bo.edu.usfx.smartfila.ventas.aplicacion.dto.OrdenCobroRespuesta;
 import bo.edu.usfx.smartfila.ventas.dominio.EstadoOrdenCobro;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -33,9 +36,14 @@ import java.util.UUID;
 public class VentasController {
 
     private final OrdenCobroService service;
+    private final ComprobantePdfService comprobantePdfService;
 
-    public VentasController(OrdenCobroService service) {
+    public VentasController(
+            OrdenCobroService service,
+            ComprobantePdfService comprobantePdfService
+    ) {
         this.service = service;
+        this.comprobantePdfService = comprobantePdfService;
     }
 
     @GetMapping("/ping")
@@ -94,6 +102,25 @@ public class VentasController {
         return service.listarAuditoria(id);
     }
 
+    @GetMapping(value = "/{id}/comprobante", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> descargarComprobante(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        OrdenCobroRespuesta orden = service.buscarPorId(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No existe una orden de cobro con ese identificador"
+                ));
+        validarAccesoComprador(orden.compradorId(), jwt);
+        byte[] pdf = comprobantePdfService.generar(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"comprobante-" + id + ".pdf\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(pdf);
+    }
+
     private void validarAccesoComprador(UUID compradorId, Jwt jwt) {
         if (jwt == null) return; // Perfil de pruebas; en ejecución normal el filtro exige JWT.
         List<String> roles = jwt.getClaimAsStringList("roles");
@@ -123,7 +150,10 @@ public class VentasController {
             @AuthenticationPrincipal Jwt jwt
     ) {
         OrdenCobroRespuesta orden = service.crear(
-                solicitud, UUID.fromString(jwt.getSubject())
+                solicitud,
+                UUID.fromString(jwt.getSubject()),
+                jwt.getClaimAsString("name"),
+                jwt.getClaimAsString("ci")
         );
 
         return ResponseEntity

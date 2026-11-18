@@ -42,6 +42,7 @@ services:
       SMARTFILA_IDENTITY_JWKS_URI: http://identity:8080/.well-known/jwks.json
       SMARTFILA_IDENTITY_ISSUER: smartfila-identidad
       SMARTFILA_IDENTITY_AUDIENCE: smartfila
+      SMARTFILA_PUBLIC_BASE_URL: ${SMARTFILA_PUBLIC_BASE_URL:-http://localhost:8084}
     depends_on:
       sales-db:
         condition: service_healthy

@@ -72,7 +72,12 @@ public class OrdenCobroService {
     }
 
     @Transactional
-    public OrdenCobroRespuesta crear(CrearOrdenCobroSolicitud solicitud, UUID compradorSolicitanteId) {
+    public OrdenCobroRespuesta crear(
+            CrearOrdenCobroSolicitud solicitud,
+            UUID compradorSolicitanteId,
+            String compradorNombre,
+            String compradorCi
+    ) {
         if (repository.existsByReservaId(solicitud.reservaId())) {
             throw new ConflictoNegocioException(
                     "La reserva ya tiene una orden de cobro"
@@ -89,6 +94,13 @@ public class OrdenCobroService {
         if (!compradorSolicitanteId.equals(reserva.compradorId())) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "La reserva no pertenece al comprador autenticado"
+            );
+        }
+
+        if (compradorNombre == null || compradorNombre.isBlank()
+                || compradorCi == null || compradorCi.isBlank()) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "El JWT no contiene los datos mínimos del comprador"
             );
         }
 
@@ -110,7 +122,11 @@ public class OrdenCobroService {
                 reserva.reservaId(),
                 reserva.compradorId(),
                 reserva.monto(),
-                reserva.venceEn()
+                reserva.venceEn(),
+                compradorNombre,
+                compradorCi,
+                reserva.sector(),
+                reserva.unidad()
         );
 
         return OrdenCobroRespuesta.desde(repository.save(orden));

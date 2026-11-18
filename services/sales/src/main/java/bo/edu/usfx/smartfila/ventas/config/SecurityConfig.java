@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .hasAnyRole("CIUDADANO", "ADMIN", "ORGANIZADOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/ventas/referencias-qr/**")
                         .hasAnyRole("CIUDADANO", "INSPECTOR", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/ventas/*/comprobante")
+                        .hasAnyRole("CIUDADANO", "ADMIN", "ORGANIZADOR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/ventas",
                                 "/api/v1/ventas/*/confirmaciones-pago-simuladas")
                         .hasRole("CIUDADANO")

@@ -21,7 +21,9 @@ public class InventarioClientDemo implements InventarioClient {
                 compradorSolicitanteId,
                 new BigDecimal("25.00"),
                 Instant.now().plusSeconds(600),
-                true
+                true,
+                "Sector Demo",
+                "Puesto D-001"
         );
 
         return Optional.of(reserva);

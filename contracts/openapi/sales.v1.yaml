@@ -172,6 +172,34 @@ paths:
                   $ref: "#/components/schemas/AuditoriaPagoRespuesta"
         "403":
           description: El rol no está autorizado
+  /api/v1/ventas/{id}/comprobante:
+    get:
+      tags: [Ventas]
+      operationId: descargarComprobante
+      summary: Descarga el comprobante PDF de una orden pagada
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Comprobante con QR de verificación
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: JWT requerido
+        "403":
+          description: No autorizado para consultar la orden
+        "404":
+          description: Orden inexistente
+        "409":
+          description: El pago sigue pendiente o faltan datos de la reserva
   /api/v1/ventas/ping:
     get:
       security: []
